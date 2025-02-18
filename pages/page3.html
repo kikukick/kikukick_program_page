@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画像処理</title>
+    <style>
+        #canvas {
+            border: 1px solid black;
+        }
+        #output {
+            width: 100%;
+            height: 200px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>画像処理 (座標と色の変換)</h1>
+
+    <!-- 画像アップロード -->
+    <input type="file" id="imageInput" accept="image/*">
+    <br><br>
+
+    <!-- 画像表示エリア -->
+    <canvas id="canvas"></canvas>
+
+    <h2>出力結果</h2>
+    <!-- 結果表示用のテキストエリア -->
+    <textarea id="output" readonly></textarea>
+
+    <!-- データ数表示 -->
+    <h3>データ数: <span id="dataCount">0</span></h3>
+
+    <script>
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const imageInput = document.getElementById("imageInput");
+        const outputTextArea = document.getElementById("output");
+        const dataCount = document.getElementById("dataCount");
+
+        imageInput.addEventListener("change", function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // 画像を読み込む
+            const img = new Image();
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                img.onload = function() {
+                    // キャンバスのサイズを画像に合わせる
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+
+                    // 画像をキャンバスに描画
+                    ctx.drawImage(img, 0, 0);
+
+                    // 画像のピクセルデータを取得
+                    const imageData = ctx.getImageData(0, 0, img.width, img.height);
+                    const pixels = imageData.data;
+                    const centerX = img.width / 2;
+                    const centerY = img.height / 2;
+
+                    const coordinates = [];
+                    let validDataCount = 0; // 黒と白のデータ数をカウント
+                    
+                    // ピクセルを1つずつ処理
+                    for (let y = 0; y < img.height; y++) {
+                        for (let x = 0; x < img.width; x++) {
+                            const index = (y * img.width + x) * 4;
+                            const r = pixels[index];     // 赤
+                            const g = pixels[index + 1]; // 緑
+                            const b = pixels[index + 2]; // 青
+                            const a = pixels[index + 3]; // アルファ（透明度）
+
+                            // 透明なピクセルはスキップ
+                            if (a === 0) continue;
+
+                            // 色を判定
+                            let color;
+                            if (r < 50 && g < 50 && b < 50) {
+                                color = 0;  // 黒
+                            } else if (r > 200 && g > 200 && b > 200) {
+                                color = 1;  // 白
+                            } else {
+                                continue;  // 黒か白以外はスキップ
+                            }
+
+                            // 座標を変換 (中心が(0,0)になるように)
+                            const transformedX = x - centerX;
+                            const transformedY = centerY - y;
+
+                            // 座標と色を整形（マイナス数値も考慮して3桁）
+                            const formattedX = transformedX < 0 
+                                ? `-${Math.abs(transformedX).toString().padStart(2, '0')}` 
+                                : transformedX.toString().padStart(3, '0');
+                            const formattedY = transformedY < 0 
+                                ? `-${Math.abs(transformedY).toString().padStart(2, '0')}` 
+                                : transformedY.toString().padStart(3, '0');
+                            const formattedColor = color.toString().padStart(3, '0');
+
+                            // 結果を配列に保存 (カンマの後にスペース無しで)
+                            coordinates.push(`(${formattedX},${formattedY},${formattedColor})`);
+                            validDataCount++; // 黒か白のデータをカウント
+                        }
+                    }
+
+                    // 結果をテキストエリアに表示
+                    outputTextArea.value = coordinates.join("\n");
+
+                    // データ数を表示
+                    dataCount.textContent = validDataCount;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+      
+      ///それをこのjsで簡単に画像データを数値化できるようにしてるんだ　お　^p^<sskエロい
+      
+    </script>
+</body>
+</html>
