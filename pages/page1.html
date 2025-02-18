@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文字置き換えコード生成</title>
+</head>
+<body>
+    <h1>文字置き換えコードを生成</h1>
+    
+    <label for="searchText">変換前の文字: </label>
+    <input type="text" id="searchText" placeholder="例: hello"><br><br>
+    
+    <label for="replaceWith">変換後の文字: </label>
+    <input type="text" id="replaceWith" placeholder="例: やあ"><br><br>
+    
+    <button id="generateCodeBtn">コードを作る</button>
+    <button id="copyCodeBtn" style="display:none;">コードをコピー</button>
+    
+    <h3>生成されたコード:</h3>
+    <pre id="generatedCode" style="border: 1px solid #ccc; padding: 10px;"></pre>
+
+    <script>
+        // 文字を置き換える関数
+        function replaceText(oldText, newText) {
+            const textNodes = document.createTreeWalker(
+                document.body, 
+                NodeFilter.SHOW_TEXT, 
+                null, 
+                false
+            );
+            
+            let currentNode;
+            while (currentNode = textNodes.nextNode()) {
+                if (currentNode.nodeValue.includes(oldText)) {
+                    // 置き換え時に新しいテキストを設定
+                    currentNode.nodeValue = currentNode.nodeValue.replace(new RegExp(oldText, 'g'), newText);
+                }
+            }
+        }
+
+        // コード生成ボタンのクリックイベント
+        document.getElementById('generateCodeBtn').addEventListener('click', function() {
+            const searchText = document.getElementById('searchText').value; // 変換前の文字
+            const replaceWith = document.getElementById('replaceWith').value; // 変換後の文字
+
+            // 入力が空でないことを確認
+            if (searchText && replaceWith) {
+                // 生成されるコード
+                const code = `
+                    // 文字を置き換える関数
+                    function replaceText(oldText, newText) {
+                        const textNodes = document.createTreeWalker(
+                            document.body, 
+                            NodeFilter.SHOW_TEXT, 
+                            null, 
+                            false
+                        );
+                        
+                        let currentNode;
+                        while (currentNode = textNodes.nextNode()) {
+                            if (currentNode.nodeValue.includes(oldText)) {
+                                // 置き換え時に新しいテキストを設定
+                                currentNode.nodeValue = currentNode.nodeValue.replace(new RegExp(oldText, 'g'), newText);
+                            }
+                        }
+                    }
+
+                    // 置き換え処理を実行
+                    replaceText("${searchText}", "${replaceWith}");
+
+                    console.log('置き換え処理が完了しました');
+                `;
+
+                // 生成されたコードをページに表示
+                document.getElementById('generatedCode').textContent = code;
+                
+                // コピーボタンを表示
+                document.getElementById('copyCodeBtn').style.display = 'inline-block';
+            } else {
+                alert('変換前と変換後の文字を入力してください。');
+            }
+        });
+
+        // コピーボタンのクリックイベント
+        document.getElementById('copyCodeBtn').addEventListener('click', function() {
+            // 生成されたコードを選択
+            const codeText = document.getElementById('generatedCode');
+            const range = document.createRange();
+            range.selectNode(codeText);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            
+            // コードをクリップボードにコピー
+            document.execCommand('copy');
+            
+            alert('コードがコピーされました！');
+        });
+    </script>
+</body>
+</html>
