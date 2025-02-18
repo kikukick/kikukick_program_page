@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub URL Fragment Display</title>
+</head>
+<body>
+
+    <h1>GitHubのURLフラグメントを表示</h1>
+    <p>GitHubのURL（例： https://github.com/kikukick/repository#example ）の#以降の部分を表示します。</p>
+
+    <p id="fragmentDisplay">ここに表示されます</p>
+
+    <script>
+        // URLのフラグメント部分（#以降の部分）を取得
+        const urlFragment = window.location.hash;
+
+        // 取得したフラグメント部分を画面に表示
+        document.getElementById("fragmentDisplay").textContent = urlFragment ? urlFragment.slice(1) : "フラグメントはありません";
+    </script>
+
+</body>
+</html>
