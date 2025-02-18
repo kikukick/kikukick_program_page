@@ -8,7 +8,7 @@
         body {
             margin: 0;
             overflow: hidden;
-            background: black;
+            background: #111;
         }
         canvas {
             display: block;
@@ -18,7 +18,7 @@
 </head>
 <body>
     <script>
-        let scene, camera, renderer, group;
+        let scene, camera, renderer, group, light;
 
         function init() {
             scene = new THREE.Scene();
@@ -28,6 +28,12 @@
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             document.body.appendChild(renderer.domElement);
+
+            // Ambient and directional light for realistic shadows
+            light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(5, 5, 5).normalize();
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0x555555));
 
             group = new THREE.Group();
             scene.add(group);
@@ -43,17 +49,35 @@
 
             for (let i = 0; i < pageUrls.length; i++) {
                 const geometry = new THREE.PlaneGeometry(1.5, 2);
-                const material = new THREE.MeshBasicMaterial({
-                    color: 0xffffff, 
+                const material = new THREE.MeshStandardMaterial({
+                    color: 0x00ccff, // Futuristic bright color
+                    emissive: 0x00ffcc, // Glowing effect
+                    emissiveIntensity: 0.5,
+                    metalness: 0.7,
+                    roughness: 0.2,
                     side: THREE.DoubleSide
                 });
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.position.x = Math.cos(i * angleStep) * radius;
                 mesh.position.z = Math.sin(i * angleStep) * radius;
                 mesh.rotation.y = -i * angleStep;
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
                 mesh.userData.url = pageUrls[i];
                 group.add(mesh);
             }
+
+            // Enable shadows in renderer
+            renderer.shadowMap.enabled = true;
+
+            // Add ground to cast shadows onto
+            const groundGeometry = new THREE.PlaneGeometry(100, 100);
+            const groundMaterial = new THREE.ShadowMaterial({ opacity: 0.5 });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = - Math.PI / 2;
+            ground.position.y = -2;
+            ground.receiveShadow = true;
+            scene.add(ground);
 
             document.addEventListener('click', onDocumentClick, false);
             animate();
