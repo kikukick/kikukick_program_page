@@ -4,21 +4,85 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>文字置き換えコード生成</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            margin: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 10px;
+        }
+
+        input {
+            padding: 8px;
+            width: 300px;
+            margin: 5px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+            display: block;
+            margin: 10px auto;
+        }
+
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            background-color: #007BFF;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            margin: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        pre {
+            text-align: left;
+            background: #333;
+            color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-width: 90%;
+            margin: 20px auto;
+            border: 1px solid #666;
+        }
+    </style>
 </head>
 <body>
     <h1>文字置き換えコードを生成</h1>
     
     <label for="searchText">変換前の文字: </label>
-    <input type="text" id="searchText" placeholder="例: hello"><br><br>
+    <input type="text" id="searchText" placeholder="例: hello">
     
     <label for="replaceWith">変換後の文字: </label>
-    <input type="text" id="replaceWith" placeholder="例: やあ"><br><br>
+    <input type="text" id="replaceWith" placeholder="例: やあ">
     
     <button id="generateCodeBtn">コードを作る</button>
-    <button id="copyCodeBtn" style="display:none;">コードをコピー</button>
+    <button id="copyCodeBtn" style="display:none;">コードをコピー
+
+  </button>
+  
     
     <h3>生成されたコード:</h3>
-    <pre id="generatedCode" style="border: 1px solid #ccc; padding: 10px;"></pre>
+    <pre id="generatedCode">まだコードが生成されていません。</pre>
 
     <script>
         // 文字を置き換える関数
@@ -33,7 +97,6 @@
             let currentNode;
             while (currentNode = textNodes.nextNode()) {
                 if (currentNode.nodeValue.includes(oldText)) {
-                    // 置き換え時に新しいテキストを設定
                     currentNode.nodeValue = currentNode.nodeValue.replace(new RegExp(oldText, 'g'), newText);
                 }
             }
@@ -41,12 +104,10 @@
 
         // コード生成ボタンのクリックイベント
         document.getElementById('generateCodeBtn').addEventListener('click', function() {
-            const searchText = document.getElementById('searchText').value; // 変換前の文字
-            const replaceWith = document.getElementById('replaceWith').value; // 変換後の文字
+            const searchText = document.getElementById('searchText').value;
+            const replaceWith = document.getElementById('replaceWith').value;
 
-            // 入力が空でないことを確認
             if (searchText && replaceWith) {
-                // 生成されるコード
                 const code = `
                     // 文字を置き換える関数
                     function replaceText(oldText, newText) {
@@ -60,7 +121,6 @@
                         let currentNode;
                         while (currentNode = textNodes.nextNode()) {
                             if (currentNode.nodeValue.includes(oldText)) {
-                                // 置き換え時に新しいテキストを設定
                                 currentNode.nodeValue = currentNode.nodeValue.replace(new RegExp(oldText, 'g'), newText);
                             }
                         }
@@ -72,10 +132,7 @@
                     console.log('置き換え処理が完了しました');
                 `;
 
-                // 生成されたコードをページに表示
                 document.getElementById('generatedCode').textContent = code;
-                
-                // コピーボタンを表示
                 document.getElementById('copyCodeBtn').style.display = 'inline-block';
             } else {
                 alert('変換前と変換後の文字を入力してください。');
@@ -84,18 +141,17 @@
 
         // コピーボタンのクリックイベント
         document.getElementById('copyCodeBtn').addEventListener('click', function() {
-            // 生成されたコードを選択
             const codeText = document.getElementById('generatedCode');
             const range = document.createRange();
             range.selectNode(codeText);
             window.getSelection().removeAllRanges();
             window.getSelection().addRange(range);
-            
-            // コードをクリップボードにコピー
             document.execCommand('copy');
-            
             alert('コードがコピーされました！');
         });
+      
+      
     </script>
+        <h4>made by kikukick</h4>
 </body>
 </html>
