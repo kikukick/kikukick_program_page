@@ -55,8 +55,7 @@
 </head>
 <body>
     <div class="carousel">
-        <div class="card active" data-link="pages/page1.html">Text Swap Script Maker
-</div>
+        <div class="card active" data-link="pages/page1.html">Text Swap Script Maker</div>
         <div class="card" data-link="pages/page2.html">Page 2</div>
         <div class="card" data-link="pages/page3.html">Page 3</div>
         <div class="card" data-link="pages/page4.html">Page 4</div>
@@ -71,13 +70,19 @@
         let currentIndex = 0;
 
         function updateCards() {
+            const angleStep = 360 / cards.length; // 1つのカードの角度間隔
             cards.forEach((card, index) => {
-                const angle = (index - currentIndex) * 30;
-                card.style.transform = `rotateY(${angle}deg) translateZ(300px)`;
+                const angle = angleStep * index - (angleStep * currentIndex); // 角度調整
+                const translateZ = 300; // Z軸方向の距離
+
+                // 3D変換でカードを円周上に配置
+                card.style.transform = `rotateY(${angle}deg) translateZ(${translateZ}px)`;
+
+                // カードの透明度を変更
                 card.style.opacity = index === currentIndex ? "1" : "0.5";
             });
         }
-        
+
         document.getElementById("next").addEventListener("click", () => {
             currentIndex = (currentIndex + 1) % cards.length;
             updateCards();
