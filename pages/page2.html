@@ -5,82 +5,71 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>画像スライサー</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-   <style>
-    body {
-        font-family: Arial, sans-serif;
-        text-align: center;
-        margin: 20px;
-        background-color: #f8f9fa;
-        color: #333;
-    }
-    h1 {
-        color: #007bff;
-    }
-    input, button {
-        margin: 10px;
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        font-size: 16px;
-    }
-    button {
-        background-color: #007bff;
-        color: white;
-        cursor: pointer;
-        border: none;
-        transition: 0.3s;
-    }
-    button:hover {
-        background-color: #0056b3;
-    }
-    div {
-        margin: 20px auto;
-        max-width: 600px;
-    }
-    .image-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        flex-direction: column;
-    }
-    .image-container img, .sliced-placeholder {
-        max-width: 100%;
-        border: 2px solid #ccc;
-        border-radius: 5px;
-    }
-    .sliced-placeholder {
-        width: 300px;
-        height: 300px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 2px dashed #bbb;
-        border-radius: 5px;
-        color: #777;
-        font-size: 14px;
-    }
-    #slicedImages {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 5px;
-        margin-top: 10px;
-    }
-    #slicedImages img {
-        display: inline-block;
-        width: 50px;
-        height: 50px;
-        object-fit: cover;
-        border: 1px solid #ccc;
-        border-radius: 3px;
-    }
-</style>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        h1 {
+            color: #007bff;
+        }
+        input, button {
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            border: none;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        div {
+            margin: 20px auto;
+            max-width: 600px;
+        }
+        .image-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .image-container img {
+            max-width: 100%;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+        }
+        #slicedImages {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        #slicedImages img {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+    </style>
 </head>
 <body>
     <h1>画像スライサー</h1>
     <input type="file" id="imageInput" accept="image/*">
     <input type="text" id="filename" placeholder="ファイル名のプレフィックス (例: slice)">
-    <input type="number" id="sliceWidth" placeholder="スライス幅 (px)" min="1" value="1">
+    <input type="number" id="sliceHeight" placeholder="スライスの高さ (px)" min="1" value="1">
     <button onclick="processImage()">画像を分割</button>
 
     <div class="image-container">
@@ -109,14 +98,18 @@
 
         function processImage() {
             const input = document.getElementById('imageInput');
-            const sliceWidth = parseInt(document.getElementById('sliceWidth').value, 10) || 1;
-
             if (!input.files.length) {
                 alert('画像を選択してください');
                 return;
             }
 
             const file = input.files[0];
+            const sliceHeight = parseInt(document.getElementById('sliceHeight').value, 10);
+            if (isNaN(sliceHeight) || sliceHeight < 1) {
+                alert('スライスの高さを1以上の整数で入力してください');
+                return;
+            }
+
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = function(event) {
@@ -128,31 +121,45 @@
                     const slicedImagesContainer = document.getElementById('slicedImages');
                     slicedImagesContainer.innerHTML = '';
 
-                    for (let x = 0; x < img.width; x += sliceWidth) {
+                    let blobs = [];
+                    for (let y = 0; y < img.height; y += sliceHeight) {
                         const sliceCanvas = document.createElement('canvas');
                         const sliceCtx = sliceCanvas.getContext('2d');
-                        sliceCanvas.width = sliceWidth;
-                        sliceCanvas.height = img.height;
+                        sliceCanvas.width = 200;
+                        sliceCanvas.height = 200;
 
-                        sliceCtx.drawImage(img, x, 0, sliceWidth, img.height, 0, 0, sliceWidth, img.height);
+                        // 背景を透明にする
+                        sliceCtx.clearRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+
+                        // 画像の中央配置計算
+                        const offsetX = (200 - img.width) / 2;
+                        const offsetY = (200 - img.height) / 2 + y;
+
+                        // 指定した高さのスライスを描画
+                        sliceCtx.drawImage(img, 0, y, img.width, sliceHeight, offsetX, offsetY, img.width, sliceHeight);
 
                         sliceCanvas.toBlob(blob => {
-                            zip.file(`${prefix}${x}.png`, blob);
+                            blobs.push({ index: y + 1, blob: blob });
+                            if (blobs.length === Math.ceil(img.height / sliceHeight)) {
+                                blobs.sort((a, b) => a.index - b.index).forEach(({ index, blob }) => {
+                                    zip.file(`${prefix}${index}.png`, blob);
 
-                            const imgElement = document.createElement('img');
-                            imgElement.src = URL.createObjectURL(blob);
-                            slicedImagesContainer.appendChild(imgElement);
+                                    const imgElement = document.createElement('img');
+                                    imgElement.src = URL.createObjectURL(blob);
+                                    imgElement.style.display = 'block';
+                                    imgElement.style.marginBottom = '2px';
+                                    slicedImagesContainer.appendChild(imgElement);
+                                });
+
+                                zip.generateAsync({ type: 'blob' }).then(content => {
+                                    const a = document.createElement('a');
+                                    a.href = URL.createObjectURL(content);
+                                    a.download = 'sliced_images.zip';
+                                    a.click();
+                                });
+                            }
                         }, 'image/png');
                     }
-
-                    setTimeout(() => {
-                        zip.generateAsync({ type: 'blob' }).then(content => {
-                            const a = document.createElement('a');
-                            a.href = URL.createObjectURL(content);
-                            a.download = 'sliced_images.zip';
-                            a.click();
-                        });
-                    }, 500);
                 };
             };
         }
