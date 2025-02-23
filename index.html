@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>something</title>
+    <title>Glowing Carousel</title>
     <style>
         body {
             display: flex;
@@ -31,10 +31,11 @@
             align-items: center;
             font-size: 24px;
             color: white;
-            transition: transform 0.5s, opacity 0.5s;
+            transition: transform 0.5s, opacity 0.5s, box-shadow 0.5s;
         }
         .active {
-            transform: scale(1.2);
+            opacity: 0;
+            box-shadow: 0 0 30px 10px rgba(255, 255, 255, 0.6);
         }
         .nav-buttons {
             position: absolute;
@@ -55,7 +56,7 @@
 </head>
 <body>
     <div class="carousel">
-        <div class="card active" data-link="pages/page1.html">Text Swap Script Maker</div>
+        <div class="card" data-link="pages/page1.html">Text Swap Script Maker</div>
         <div class="card" data-link="pages/page2.html">Page 2</div>
         <div class="card" data-link="pages/page3.html">Page 3</div>
         <div class="card" data-link="pages/page4.html">Page 4</div>
@@ -70,16 +71,13 @@
         let currentIndex = 0;
 
         function updateCards() {
-            const angleStep = 360 / cards.length; // 1つのカードの角度間隔
+            const angleStep = 360 / cards.length;
             cards.forEach((card, index) => {
-                const angle = angleStep * index - (angleStep * currentIndex); // 角度調整
-                const translateZ = 300; // Z軸方向の距離
-
-                // 3D変換でカードを円周上に配置
+                const angle = angleStep * index - (angleStep * currentIndex);
+                const translateZ = 300;
                 card.style.transform = `rotateY(${angle}deg) translateZ(${translateZ}px)`;
-
-                // カードの透明度を変更
-                card.style.opacity = index === currentIndex ? "1" : "0.5";
+                card.style.opacity = index === currentIndex ? "100" : "0.5";
+                card.classList.toggle("active", index === currentIndex);
             });
         }
 
