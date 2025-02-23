@@ -80,6 +80,7 @@
     <h1>画像スライサー</h1>
     <input type="file" id="imageInput" accept="image/*">
     <input type="text" id="filename" placeholder="ファイル名のプレフィックス (例: slice)">
+    <input type="number" id="sliceWidth" placeholder="スライス幅 (px)" min="1" value="1">
     <button onclick="processImage()">画像を分割</button>
 
     <div class="image-container">
@@ -108,6 +109,8 @@
 
         function processImage() {
             const input = document.getElementById('imageInput');
+            const sliceWidth = parseInt(document.getElementById('sliceWidth').value, 10) || 1;
+
             if (!input.files.length) {
                 alert('画像を選択してください');
                 return;
@@ -125,47 +128,31 @@
                     const slicedImagesContainer = document.getElementById('slicedImages');
                     slicedImagesContainer.innerHTML = '';
 
-                    let blobs = new Array(img.height);
-                    for (let y = 0; y < img.height; y++) {
+                    for (let x = 0; x < img.width; x += sliceWidth) {
                         const sliceCanvas = document.createElement('canvas');
                         const sliceCtx = sliceCanvas.getContext('2d');
-                        sliceCanvas.width = 200;
-                        sliceCanvas.height = 200;
+                        sliceCanvas.width = sliceWidth;
+                        sliceCanvas.height = img.height;
 
-                        sliceCtx.clearRect(0, 0, sliceCanvas.width, sliceCanvas.height);
-                        
-                        const offsetX = (200 - img.width) / 2;
-                        const offsetY = (200 - img.height) / 2 + y;
-                        sliceCtx.drawImage(img, 0, y, img.width, 1, offsetX, offsetY, img.width, 1);
+                        sliceCtx.drawImage(img, x, 0, sliceWidth, img.height, 0, 0, sliceWidth, img.height);
 
                         sliceCanvas.toBlob(blob => {
-                            blobs[y] = { index: y + 1, blob: blob };
-                            if (blobs.filter(b => b).length === img.height) {
-                                blobs.sort((a, b) => a.index - b.index).forEach(({ index, blob }) => {
-                                    zip.file(`${prefix}${index}.png`, blob);
+                            zip.file(`${prefix}${x}.png`, blob);
 
-                                    const imgElement = document.createElement('img');
-                                    imgElement.src = URL.createObjectURL(blob);
-                                    imgElement.style.display = 'block';
-                                    imgElement.style.marginBottom = '2px';
-                                    slicedImagesContainer.appendChild(imgElement);
-
-                                    if (index === 1) {
-                                        const originalImage = document.getElementById('originalImage');
-                                        originalImage.src = imgElement.src;
-                                        originalImage.style.display = 'block';
-                                    }
-                                });
-
-                                zip.generateAsync({ type: 'blob' }).then(content => {
-                                    const a = document.createElement('a');
-                                    a.href = URL.createObjectURL(content);
-                                    a.download = 'sliced_images.zip';
-                                    a.click();
-                                });
-                            }
+                            const imgElement = document.createElement('img');
+                            imgElement.src = URL.createObjectURL(blob);
+                            slicedImagesContainer.appendChild(imgElement);
                         }, 'image/png');
                     }
+
+                    setTimeout(() => {
+                        zip.generateAsync({ type: 'blob' }).then(content => {
+                            const a = document.createElement('a');
+                            a.href = URL.createObjectURL(content);
+                            a.download = 'sliced_images.zip';
+                            a.click();
+                        });
+                    }, 500);
                 };
             };
         }
