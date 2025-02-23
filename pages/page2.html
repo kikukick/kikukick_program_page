@@ -4,68 +4,159 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>画像スライサー</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+   <style>
+    body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 20px;
+        background-color: #f8f9fa;
+        color: #333;
+    }
+    h1 {
+        color: #007bff;
+    }
+    input, button {
+        margin: 10px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 16px;
+    }
+    button {
+        background-color: #007bff;
+        color: white;
+        cursor: pointer;
+        border: none;
+        transition: 0.3s;
+    }
+    button:hover {
+        background-color: #0056b3;
+    }
+    div {
+        margin: 20px auto;
+        max-width: 600px;
+    }
+    .image-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+    }
+    .image-container img, .sliced-placeholder {
+        max-width: 100%;
+        border: 2px solid #ccc;
+        border-radius: 5px;
+    }
+    .sliced-placeholder {
+        width: 300px;
+        height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px dashed #bbb;
+        border-radius: 5px;
+        color: #777;
+        font-size: 14px;
+    }
+    #slicedImages {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 5px;
+        margin-top: 10px;
+    }
+    #slicedImages img {
+        display: inline-block;
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+    }
+</style>
 </head>
 <body>
     <h1>画像スライサー</h1>
     <input type="file" id="imageInput" accept="image/*">
     <input type="text" id="filename" placeholder="ファイル名のプレフィックス (例: slice)">
     <button onclick="processImage()">画像を分割</button>
-    <div>
+
+    <div class="image-container">
         <h2>元の画像</h2>
-        <img id="originalImage" style="max-width: 100%;">
+        <img id="originalImage" style="display: none;">
     </div>
+
     <div>
-        <h2>編集後の画像</h2>
+        <h2>分割された画像</h2>
         <div id="slicedImages"></div>
     </div>
+
     <script>
+        document.getElementById('imageInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById('originalImage');
+                    img.src = e.target.result;
+                    img.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
         function processImage() {
             const input = document.getElementById('imageInput');
             if (!input.files.length) {
                 alert('画像を選択してください');
                 return;
             }
-            
+
             const file = input.files[0];
             const reader = new FileReader();
             reader.readAsDataURL(file);
-            reader.onload = function (event) {
+            reader.onload = function(event) {
                 const img = new Image();
                 img.src = event.target.result;
-                document.getElementById('originalImage').src = img.src;
-                img.onload = function () {
+                img.onload = function() {
                     const zip = new JSZip();
-                    const prefix = document.getElementById('filename').value || '';
+                    const prefix = document.getElementById('filename').value.trim() || 'slice_';
                     const slicedImagesContainer = document.getElementById('slicedImages');
                     slicedImagesContainer.innerHTML = '';
-                    
+
                     let blobs = new Array(img.height);
                     for (let y = 0; y < img.height; y++) {
                         const sliceCanvas = document.createElement('canvas');
                         const sliceCtx = sliceCanvas.getContext('2d');
                         sliceCanvas.width = 200;
                         sliceCanvas.height = 200;
-                        
-                        // 背景を透明にする
+
                         sliceCtx.clearRect(0, 0, sliceCanvas.width, sliceCanvas.height);
                         
-                        // 画像の中心を 200x200 の中心に配置し、y' の位置に 1px のスライスを描画
                         const offsetX = (200 - img.width) / 2;
                         const offsetY = (200 - img.height) / 2 + y;
                         sliceCtx.drawImage(img, 0, y, img.width, 1, offsetX, offsetY, img.width, 1);
-                        
+
                         sliceCanvas.toBlob(blob => {
                             blobs[y] = { index: y + 1, blob: blob };
                             if (blobs.filter(b => b).length === img.height) {
                                 blobs.sort((a, b) => a.index - b.index).forEach(({ index, blob }) => {
                                     zip.file(`${prefix}${index}.png`, blob);
-                                    
+
                                     const imgElement = document.createElement('img');
                                     imgElement.src = URL.createObjectURL(blob);
                                     imgElement.style.display = 'block';
                                     imgElement.style.marginBottom = '2px';
                                     slicedImagesContainer.appendChild(imgElement);
+
+                                    if (index === 1) {
+                                        const originalImage = document.getElementById('originalImage');
+                                        originalImage.src = imgElement.src;
+                                        originalImage.style.display = 'block';
+                                    }
                                 });
+
                                 zip.generateAsync({ type: 'blob' }).then(content => {
                                     const a = document.createElement('a');
                                     a.href = URL.createObjectURL(content);
@@ -79,6 +170,5 @@
             };
         }
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </body>
 </html>
