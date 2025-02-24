@@ -52,7 +52,6 @@
             font-size: 18px;
             border-radius: 10px;
         }
-        /* オーバーレイのデザイン */
         .overlay {
             position: fixed;
             top: 0;
@@ -98,6 +97,10 @@
             background: #007bff;
             color: white;
         }
+        .open-btn {
+            background: #28a745;
+            color: white;
+        }
         .close-btn {
             background: #ccc;
         }
@@ -116,12 +119,12 @@
         </div>
     </div>
     
-    <!-- オーバーレイポップアップ -->
     <div class="overlay" id="overlay">
         <div class="popup">
-            <h2>もうフォローしてますか？</h2>
+            <h2>操作を選択してください</h2>
             <div class="popup-buttons">
                 <button class="follow-btn" id="follow">フォローする</button>
+                <button class="open-btn" id="open">プログラムを開く</button>
                 <button class="close-btn" id="close">閉じる</button>
             </div>
         </div>
@@ -131,6 +134,7 @@
         const cards = document.querySelectorAll(".card");
         const overlay = document.getElementById("overlay");
         const followBtn = document.getElementById("follow");
+        const openBtn = document.getElementById("open");
         const closeBtn = document.getElementById("close");
         let currentIndex = 0;
         let selectedLink = "";
@@ -164,6 +168,10 @@
         });
 
         followBtn.addEventListener("click", () => {
+            window.location.href = "https://指定したリンク";
+        });
+
+        openBtn.addEventListener("click", () => {
             window.location.href = selectedLink;
         });
 
