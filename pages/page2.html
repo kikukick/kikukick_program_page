@@ -125,8 +125,8 @@
                     for (let y = 0; y < img.height; y += sliceHeight) {
                         const sliceCanvas = document.createElement('canvas');
                         const sliceCtx = sliceCanvas.getContext('2d');
-                        sliceCanvas.width = img.width;  // 元画像の幅に合わせる
-                        sliceCanvas.height = sliceHeight;  // 高さは指定されたスライスの高さ
+                        sliceCanvas.width = img.width;  // 元の画像の幅に合わせる
+                        sliceCanvas.height = sliceHeight;  // スライスの高さ
 
                         // 背景を透明にする
                         sliceCtx.clearRect(0, 0, sliceCanvas.width, sliceCanvas.height);
