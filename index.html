@@ -18,6 +18,9 @@
             width: 300px;
             height: 400px;
             perspective: 1000px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .card {
             position: absolute;
@@ -39,10 +42,11 @@
         }
         .nav-buttons {
             position: absolute;
-            bottom: -50px;
+            bottom: -60px;
             width: 100%;
             display: flex;
             justify-content: space-between;
+            padding: 0 20px;
         }
         .nav-buttons button {
             background: #fff;
@@ -51,6 +55,7 @@
             cursor: pointer;
             font-size: 18px;
             border-radius: 10px;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
         }
         .overlay {
             position: fixed;
@@ -75,7 +80,7 @@
             padding: 20px;
             border-radius: 15px;
             text-align: center;
-            box-shadow: 0 10px 20px rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
             width: 300px;
         }
         .popup h2 {
@@ -92,6 +97,7 @@
             border-radius: 10px;
             font-size: 16px;
             cursor: pointer;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
         }
         .follow-btn {
             background: #007bff;
@@ -121,10 +127,10 @@
     
     <div class="overlay" id="overlay">
         <div class="popup">
-            <h2>フォローしませんか？</h2>
+            <h2>操作を選択してください</h2>
             <div class="popup-buttons">
                 <button class="follow-btn" id="follow">フォローする</button>
-                <button class="open-btn" id="open">無視;  ;</button>
+                <button class="open-btn" id="open">プログラムを開く</button>
                 <button class="close-btn" id="close">閉じる</button>
             </div>
         </div>
