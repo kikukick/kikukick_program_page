@@ -125,18 +125,14 @@
                     for (let y = 0; y < img.height; y += sliceHeight) {
                         const sliceCanvas = document.createElement('canvas');
                         const sliceCtx = sliceCanvas.getContext('2d');
-                        sliceCanvas.width = 200;
-                        sliceCanvas.height = 200;
+                        sliceCanvas.width = img.width;  // 元画像の幅に合わせる
+                        sliceCanvas.height = sliceHeight;  // 高さは指定されたスライスの高さ
 
                         // 背景を透明にする
                         sliceCtx.clearRect(0, 0, sliceCanvas.width, sliceCanvas.height);
 
-                        // 画像の中央配置計算
-                        const offsetX = (200 - img.width) / 2;
-                        const offsetY = (200 - img.height) / 2 + y;
-
                         // 指定した高さのスライスを描画
-                        sliceCtx.drawImage(img, 0, y, img.width, sliceHeight, offsetX, offsetY, img.width, sliceHeight);
+                        sliceCtx.drawImage(img, 0, y, img.width, sliceHeight, 0, 0, img.width, sliceHeight);
 
                         sliceCanvas.toBlob(blob => {
                             blobs.push({ index: y + 1, blob: blob });
