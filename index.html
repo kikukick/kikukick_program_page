@@ -34,7 +34,7 @@
             transition: transform 0.5s, opacity 0.5s, box-shadow 0.5s;
         }
         .active {
-            opacity: 0;
+            opacity: 1;
             box-shadow: 0 0 30px 10px rgba(255, 255, 255, 0.6);
         }
         .nav-buttons {
@@ -52,6 +52,55 @@
             font-size: 18px;
             border-radius: 10px;
         }
+        /* オーバーレイのデザイン */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .popup {
+            background: #fff;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(255, 255, 255, 0.2);
+            width: 300px;
+        }
+        .popup h2 {
+            color: #333;
+        }
+        .popup-buttons {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-around;
+        }
+        .popup button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .follow-btn {
+            background: #007bff;
+            color: white;
+        }
+        .close-btn {
+            background: #ccc;
+        }
     </style>
 </head>
 <body>
@@ -59,16 +108,32 @@
         <div class="card" data-link="pages/page2.html">千切り自動機</div>
         <div class="card" data-link="pages/page3.html">白黒反転</div>
         <div class="card" data-link="pages/page4.html">オーディオスペクトラム</div>
-        <div class="card" data-link="pages/page4.html">Page 4</div>
-        <div class="card" data-link="pages/page5.html">Page 5</div>
+        <div class="card" data-link="pages/page5.html">Page 4</div>
+        <div class="card" data-link="pages/page6.html">Page 5</div>
         <div class="nav-buttons">
             <button id="prev">◀</button>
             <button id="next">▶</button>
         </div>
     </div>
+    
+    <!-- オーバーレイポップアップ -->
+    <div class="overlay" id="overlay">
+        <div class="popup">
+            <h2>もうフォローしてますか？</h2>
+            <div class="popup-buttons">
+                <button class="follow-btn" id="follow">フォローする</button>
+                <button class="close-btn" id="close">閉じる</button>
+            </div>
+        </div>
+    </div>
+    
     <script>
         const cards = document.querySelectorAll(".card");
+        const overlay = document.getElementById("overlay");
+        const followBtn = document.getElementById("follow");
+        const closeBtn = document.getElementById("close");
         let currentIndex = 0;
+        let selectedLink = "";
 
         function updateCards() {
             const angleStep = 360 / cards.length;
@@ -76,7 +141,7 @@
                 const angle = angleStep * index - (angleStep * currentIndex);
                 const translateZ = 300;
                 card.style.transform = `rotateY(${angle}deg) translateZ(${translateZ}px)`;
-                card.style.opacity = index === currentIndex ? "100" : "0.5";
+                card.style.opacity = index === currentIndex ? "1" : "0.5";
                 card.classList.toggle("active", index === currentIndex);
             });
         }
@@ -93,8 +158,17 @@
 
         cards.forEach(card => {
             card.addEventListener("click", () => {
-                window.location.href = card.getAttribute("data-link");
+                selectedLink = card.getAttribute("data-link");
+                overlay.classList.add("active");
             });
+        });
+
+        followBtn.addEventListener("click", () => {
+            window.location.href = selectedLink;
+        });
+
+        closeBtn.addEventListener("click", () => {
+            overlay.classList.remove("active");
         });
 
         updateCards();
