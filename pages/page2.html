@@ -125,14 +125,27 @@
                     for (let y = 0; y < img.height; y += sliceHeight) {
                         const sliceCanvas = document.createElement('canvas');
                         const sliceCtx = sliceCanvas.getContext('2d');
-                        sliceCanvas.width = img.width;  // 元の画像の幅に合わせる
-                        sliceCanvas.height = sliceHeight;  // スライスの高さ
+                        
+                        // 画像の幅や高さが奇数かをチェック
+                        const bgSize = (img.width % 2 !== 0 || img.height % 2 !== 0) ? 201 : 200;
+                        
+                        sliceCanvas.width = bgSize;
+                        sliceCanvas.height = bgSize;
 
                         // 背景を透明にする
                         sliceCtx.clearRect(0, 0, sliceCanvas.width, sliceCanvas.height);
 
-                        // 指定した高さのスライスを描画
-                        sliceCtx.drawImage(img, 0, y, img.width, sliceHeight, 0, 0, img.width, sliceHeight);
+                        // 画像の中央配置計算
+                        const offsetX = (bgSize - img.width) / 2;
+                        const offsetY = (bgSize - img.height) / 2 + y;
+
+                        // 奇数サイズの調整
+                        if (img.width % 2 !== 0 || img.height % 2 !== 0) {
+                            // 画像を1ピクセル横にずらす
+                            sliceCtx.drawImage(img, 0, y, img.width, sliceHeight, offsetX + 1, offsetY, img.width, sliceHeight);
+                        } else {
+                            sliceCtx.drawImage(img, 0, y, img.width, sliceHeight, offsetX, offsetY, img.width, sliceHeight);
+                        }
 
                         sliceCanvas.toBlob(blob => {
                             blobs.push({ index: y + 1, blob: blob });
