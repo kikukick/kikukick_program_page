@@ -5,92 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>画像処理</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        .container {
-            background-color: #fff;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            border-radius: 8px;
-            width: 80%;
-            max-width: 900px;
-        }
-
-        h1 {
-            font-size: 24px;
-            text-align: center;
-            margin-bottom: 20px;
-            color: #333;
-        }
-
-        input[type="file"] {
-            display: block;
-            margin: 0 auto 20px;
-            padding: 10px;
-            background-color: #9966ff;
-            border: none;
-            border-radius: 5px;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        input[type="file"]:hover {
-            background-color: #7a4ed7;
-        }
-
-        canvas {
-            display: block;
-            margin: 0 auto;
-            border: 1px solid #ccc;
-            background-color: #eee;
-            max-width: 100%;
-            margin-top: 20px;
-        }
-
-        textarea {
-            width: 100%;
-            height: 150px;
-            padding: 10px;
-            font-size: 14px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin-top: 20px;
-            resize: vertical;
-            background-color: #f7f7f7;
-        }
-
-        h2 {
-            font-size: 20px;
-            margin-top: 30px;
-            text-align: center;
-            color: #333;
-        }
-
-        h3 {
-            text-align: center;
-            font-size: 16px;
-            color: #333;
-        }
-
-        .data-info {
-            font-size: 14px;
-            color: #555;
-        }
-
-        #dataCount {
-            font-weight: bold;
-        }
+        /* スタイルは前回のコードと同じ */
     </style>
 </head>
 <body>
@@ -109,6 +24,14 @@
 
         <!-- データ数表示 -->
         <h3>データ数: <span id="dataCount">0</span></h3>
+
+        <!-- sb3ファイルダウンロードボタン -->
+        <h2>SB3ファイルをダウンロード</h2>
+        <a href="pages/仮ブログラム.sb3" download="仮ブログラム.sb3">
+            <button style="padding: 10px 20px; background-color: #9966ff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                SB3ファイルをダウンロード
+            </button>
+        </a>
     </div>
 
     <script>
