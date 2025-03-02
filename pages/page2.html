@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>画像スライサーvr 5.1</title>
+    <title>画像スライサー vr 5.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         body {
@@ -33,16 +33,6 @@
         button:hover {
             background-color: #0056b3;
         }
-        div {
-            margin: 20px auto;
-            max-width: 600px;
-        }
-        .image-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
         .image-container img {
             max-width: 100%;
             border: 2px solid #ccc;
@@ -56,20 +46,11 @@
             margin-top: 10px;
         }
         #slicedImages img {
-            display: inline-block;
             width: 50px;
             height: 50px;
             object-fit: cover;
             border: 1px solid #ccc;
             border-radius: 3px;
-        }
-        .instructions {
-            text-align: left;
-            background: #fff;
-            padding: 15px;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            margin-top: 20px;
         }
     </style>
 </head>
@@ -79,7 +60,7 @@
     <input type="text" id="filename" placeholder="ファイル名のプレフィックス (例: slice)">
     <input type="number" id="sliceHeight" placeholder="スライスの高さ (px)" min="1" value="1">
     <button onclick="processImage()">スライスされた画像をDL</button>
-
+    
     <div class="image-container">
         <h2>元の画像</h2>
         <img id="originalImage" style="display: none;">
@@ -90,43 +71,17 @@
         <div id="slicedImages"></div>
     </div>
 
-    <div class="instructions">
-        <h2>使用方法</h2>
-        <ol>
-            <li>キクキックをフォロー、この作品に星とハート((((</li>
-            <li>千切りしたい画像を選択。</li>
-            <li>ファイル名を指定。(保存される画像の名前です。ex: abc1 abc2 abc3)</li>
-            <li>千切りの分厚さを数値で選択(初期値は1)</li>
-            <li>「スライスされた画像をDL」を押す</li>
-            <li>zip形式でスライスされた画像がまとめられてDLされる</li>
-            <li>zip解凍</li>
-            <li>Scratchの「コスチュームを読み込む」からzip内の画像を全て(command A)選択し、Scratch上に読み込む</li>
-            <li>プログラムを付け足して完成</li>
-        </ol>
-        <h2>バグ報告とその対応</h2>
-        <p>まず、ドットを使用する際、2つのドットで画像サイズ1となります。<br>
-        そのため縦方向横方向に1ドット足してみて、もし画像サイズが変わるようであれば今描いたドットは消してください。<br>
-        もし画像サイズが変わらないならそのままにしてください。</p>
-    </div>
-</body>
-</html>
-
-<body>
-    <h1>画像スライサー</h1>
-    <input type="file" id="imageInput" accept="image/*">
-    <input type="text" id="filename" placeholder="ファイル名のプレフィックス (例: slice)">
-    <input type="number" id="sliceHeight" placeholder="スライスの高さ (px)" min="1" value="1">
-    <button onclick="processImage()">スライスされた画像をDL</button>
-
-    <div class="image-container">
-        <h2>元の画像</h2>
-        <img id="originalImage" style="display: none;">
-    </div>
-
-    <div>
-        <h2>分割された画像</h2>
-        <div id="slicedImages"></div>
-    </div>
+    <h2>使用方法</h2>
+    <p>1. 画像を選択</p>
+    <p>2. ファイル名を入力 (例: abc → abc1, abc2, abc3...)</p>
+    <p>3. スライスの高さを設定 (初期値は1px)</p>
+    <p>4. 「スライスされた画像をDL」ボタンを押す</p>
+    <p>5. ZIPファイルでダウンロードされる</p>
+    <p>6. ZIPを解凍し、Scratchの「コスチュームを読み込む」から全ての画像を選択して読み込む</p>
+    <p>7. プログラムを付け足して完成！</p>
+    
+    <h2>バグ報告と対策</h2>
+    <p>Scratchではドット絵を描くと2ドットで1ピクセルと認識されるため、画像のサイズが100x100と表示されていても、実際には100.5x100.5の場合があります。そのため、画像サイズを調整する際は、1ドット分余分に追加し、101x101などのサイズに調整してください。</p>
 
     <script>
         document.getElementById('imageInput').addEventListener('change', function(event) {
@@ -171,41 +126,19 @@
                     for (let y = 0; y < img.height; y += sliceHeight) {
                         const sliceCanvas = document.createElement('canvas');
                         const sliceCtx = sliceCanvas.getContext('2d');
-                        
-                        // 画像の幅や高さが奇数かをチェック
-                        const bgSize = (img.width % 2 !== 0 || img.height % 2 !== 0) ? 401 : 400;
-                        
-                        sliceCanvas.width = bgSize;
-                        sliceCanvas.height = bgSize;
-
-                        // 背景を透明にする
-                        sliceCtx.clearRect(0, 0, sliceCanvas.width, sliceCanvas.height);
-
-                        // 画像の中央配置計算
-                        const offsetX = (bgSize - img.width) / 2;
-                        const offsetY = (bgSize - img.height) / 2 + y;
-
-                        // 奇数サイズの調整
-                        if (img.width % 2 !== 0 || img.height % 2 !== 0) {
-                            // 画像を1ピクセル横にずらす
-                            sliceCtx.drawImage(img, 0, y, img.width, sliceHeight, offsetX + 1, offsetY, img.width, sliceHeight);
-                        } else {
-                            sliceCtx.drawImage(img, 0, y, img.width, sliceHeight, offsetX, offsetY, img.width, sliceHeight);
-                        }
+                        sliceCanvas.width = img.width;
+                        sliceCanvas.height = sliceHeight;
+                        sliceCtx.drawImage(img, 0, y, img.width, sliceHeight, 0, 0, img.width, sliceHeight);
 
                         sliceCanvas.toBlob(blob => {
                             blobs.push({ index: y + 1, blob: blob });
                             if (blobs.length === Math.ceil(img.height / sliceHeight)) {
                                 blobs.sort((a, b) => a.index - b.index).forEach(({ index, blob }) => {
                                     zip.file(`${prefix}${index}.png`, blob);
-
                                     const imgElement = document.createElement('img');
                                     imgElement.src = URL.createObjectURL(blob);
-                                    imgElement.style.display = 'block';
-                                    imgElement.style.marginBottom = '2px';
                                     slicedImagesContainer.appendChild(imgElement);
                                 });
-
                                 zip.generateAsync({ type: 'blob' }).then(content => {
                                     const a = document.createElement('a');
                                     a.href = URL.createObjectURL(content);
