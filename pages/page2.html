@@ -63,8 +63,54 @@
             border: 1px solid #ccc;
             border-radius: 3px;
         }
+        .instructions {
+            text-align: left;
+            background: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
     </style>
 </head>
+<body>
+    <h1>画像スライサー</h1>
+    <input type="file" id="imageInput" accept="image/*">
+    <input type="text" id="filename" placeholder="ファイル名のプレフィックス (例: slice)">
+    <input type="number" id="sliceHeight" placeholder="スライスの高さ (px)" min="1" value="1">
+    <button onclick="processImage()">スライスされた画像をDL</button>
+
+    <div class="image-container">
+        <h2>元の画像</h2>
+        <img id="originalImage" style="display: none;">
+    </div>
+
+    <div>
+        <h2>分割された画像</h2>
+        <div id="slicedImages"></div>
+    </div>
+
+    <div class="instructions">
+        <h2>使用方法</h2>
+        <ol>
+            <li>キクキックをフォロー、この作品に星とハート((((</li>
+            <li>千切りしたい画像を選択。</li>
+            <li>ファイル名を指定。(保存される画像の名前です。ex: abc1 abc2 abc3)</li>
+            <li>千切りの分厚さを数値で選択(初期値は1)</li>
+            <li>「スライスされた画像をDL」を押す</li>
+            <li>zip形式でスライスされた画像がまとめられてDLされる</li>
+            <li>zip解凍</li>
+            <li>Scratchの「コスチュームを読み込む」からzip内の画像を全て(command A)選択し、Scratch上に読み込む</li>
+            <li>プログラムを付け足して完成</li>
+        </ol>
+        <h2>バグ報告とその対応</h2>
+        <p>まず、ドットを使用する際、2つのドットで画像サイズ1となります。<br>
+        そのため縦方向横方向に1ドット足してみて、もし画像サイズが変わるようであれば今描いたドットは消してください。<br>
+        もし画像サイズが変わらないならそのままにしてください。</p>
+    </div>
+</body>
+</html>
+
 <body>
     <h1>画像スライサー</h1>
     <input type="file" id="imageInput" accept="image/*">
