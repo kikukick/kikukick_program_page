@@ -140,7 +140,7 @@
                 img.src = event.target.result;
                 img.onload = function() {
                     const zip = new JSZip();
-                    const prefix = document.getElementById('filename').value.trim() || 'slice_';
+                    const prefix = document.getElementById('filename').value.trim() || '';
                     const slicedImagesContainer = document.getElementById('slicedImages');
                     slicedImagesContainer.innerHTML = '';
 
