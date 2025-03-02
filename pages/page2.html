@@ -13,15 +13,25 @@
             background-color: #f8f9fa;
             color: #333;
         }
-        h1 {
+        h1, h2 {
             color: #007bff;
         }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
         input, button {
-            margin: 10px;
+            width: calc(100% - 20px);
+            margin: 10px 0;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
             font-size: 16px;
+            display: block;
         }
         button {
             background-color: #007bff;
@@ -33,10 +43,10 @@
         button:hover {
             background-color: #0056b3;
         }
-        .image-container img {
+        .image-preview img {
             max-width: 100%;
-            border: 2px solid #ccc;
             border-radius: 5px;
+            border: 2px solid #ccc;
         }
         #slicedImages {
             display: flex;
@@ -52,36 +62,44 @@
             border: 1px solid #ccc;
             border-radius: 3px;
         }
+        .instructions {
+            text-align: left;
+            font-size: 14px;
+            margin-top: 20px;
+            background: #e9ecef;
+            padding: 10px;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
-    <h1>画像スライサー</h1>
-    <input type="file" id="imageInput" accept="image/*">
-    <input type="text" id="filename" placeholder="ファイル名のプレフィックス (例: slice)">
-    <input type="number" id="sliceHeight" placeholder="スライスの高さ (px)" min="1" value="1">
-    <button onclick="processImage()">スライスされた画像をDL</button>
-    
-    <div class="image-container">
-        <h2>元の画像</h2>
-        <img id="originalImage" style="display: none;">
+    <div class="container">
+        <h1>画像スライサー</h1>
+        <input type="file" id="imageInput" accept="image/*">
+        <input type="text" id="filename" placeholder="ファイル名のプレフィックス (例: slice)">
+        <input type="number" id="sliceHeight" placeholder="スライスの高さ (px)" min="1" value="1">
+        <button onclick="processImage()">スライスされた画像をダウンロード</button>
+        <div class="image-preview">
+            <h2>元の画像</h2>
+            <img id="originalImage" style="display: none;">
+        </div>
+        <div>
+            <h2>分割された画像</h2>
+            <div id="slicedImages"></div>
+        </div>
+        <div class="instructions">
+            <h2>使用方法</h2>
+            <ol>
+                <li>画像を選択</li>
+                <li>ファイル名のプレフィックスを入力（例: abc → abc1, abc2, ...）</li>
+                <li>スライスの高さを指定（デフォルト: 1px）</li>
+                <li>「スライスされた画像をダウンロード」ボタンを押す</li>
+                <li>ZIP形式でダウンロードされる</li>
+                <li>ZIPを解凍し、Scratchの「コスチュームを読み込む」からすべての画像を選択</li>
+                <li>プログラムを追加して完成</li>
+            </ol>
+        </div>
     </div>
-
-    <div>
-        <h2>分割された画像</h2>
-        <div id="slicedImages"></div>
-    </div>
-
-    <h2>使用方法</h2>
-    <p>1. 画像を選択</p>
-    <p>2. ファイル名を入力 (例: abc → abc1, abc2, abc3...)</p>
-    <p>3. スライスの高さを設定 (初期値は1px)</p>
-    <p>4. 「スライスされた画像をDL」ボタンを押す</p>
-    <p>5. ZIPファイルでダウンロードされる</p>
-    <p>6. ZIPを解凍し、Scratchの「コスチュームを読み込む」から全ての画像を選択して読み込む</p>
-    <p>7. プログラムを付け足して完成！</p>
-    
-    <h2>バグ報告と対策</h2>
-    <p>Scratchではドット絵を描くと2ドットで1ピクセルと認識されるため、画像のサイズが100x100と表示されていても、実際には100.5x100.5の場合があります。そのため、画像サイズを調整する際は、1ドット分余分に追加し、101x101などのサイズに調整してください。</p>
 
     <script>
         document.getElementById('imageInput').addEventListener('change', function(event) {
@@ -122,23 +140,21 @@
                     const slicedImagesContainer = document.getElementById('slicedImages');
                     slicedImagesContainer.innerHTML = '';
 
-                    let blobs = [];
+                    let index = 1;
                     for (let y = 0; y < img.height; y += sliceHeight) {
                         const sliceCanvas = document.createElement('canvas');
-                        const sliceCtx = sliceCanvas.getContext('2d');
                         sliceCanvas.width = img.width;
                         sliceCanvas.height = sliceHeight;
+                        const sliceCtx = sliceCanvas.getContext('2d');
                         sliceCtx.drawImage(img, 0, y, img.width, sliceHeight, 0, 0, img.width, sliceHeight);
-
+                        
                         sliceCanvas.toBlob(blob => {
-                            blobs.push({ index: y + 1, blob: blob });
-                            if (blobs.length === Math.ceil(img.height / sliceHeight)) {
-                                blobs.sort((a, b) => a.index - b.index).forEach(({ index, blob }) => {
-                                    zip.file(`${prefix}${index}.png`, blob);
-                                    const imgElement = document.createElement('img');
-                                    imgElement.src = URL.createObjectURL(blob);
-                                    slicedImagesContainer.appendChild(imgElement);
-                                });
+                            zip.file(`${prefix}${index}.png`, blob);
+                            const imgElement = document.createElement('img');
+                            imgElement.src = URL.createObjectURL(blob);
+                            slicedImagesContainer.appendChild(imgElement);
+                            index++;
+                            if (index > Math.ceil(img.height / sliceHeight)) {
                                 zip.generateAsync({ type: 'blob' }).then(content => {
                                     const a = document.createElement('a');
                                     a.href = URL.createObjectURL(content);
