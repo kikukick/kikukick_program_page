@@ -1,12 +1,13 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>画像スライサー vr 5.1</title>
+    <title>画像スライサー</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        body {
+            body {
             font-family: Arial, sans-serif;
             text-align: center;
             margin: 20px;
@@ -73,21 +74,13 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>画像スライサー</h1>
-        <input type="file" id="imageInput" accept="image/*">
-        <input type="text" id="filename" placeholder="ファイル名のプレフィックス (例: slice)">
-        <input type="number" id="sliceHeight" placeholder="スライスの高さ (px)" min="1" value="1">
-        <button onclick="processImage()">スライスされた画像をダウンロード</button>
-        <div class="image-preview">
-            <h2>元の画像</h2>
-            <img id="originalImage" style="display: none;">
-        </div>
-        <div>
-            <h2>分割された画像</h2>
-            <div id="slicedImages"></div>
-        </div>
-        <div class="instructions">
+      <div class="container">
+    <h1>画像スライサー</h1>
+    <input type="file" id="imageInput" accept="image/*">
+    <input type="text" id="filename" placeholder="ファイル名のプレフィックス (例: slice)">
+    <input type="number" id="sliceHeight" placeholder="スライスの高さ (px)" min="1" value="1">
+    <button onclick="processImage()">画像を分割</button>
+            <div class="instructions">
             <h2>使用方法</h2>
             <ol>
                 <li>画像を選択</li>
@@ -103,6 +96,17 @@
         <h2>バグ報告と対応</h2>
         <p>Scratchではドット絵を描くと2dotで画像サイズが1と表記されるため、100×100の画像でも実際には100.5になる場合があります。そのため、正しく動作しないことがあります。解決策として、画像の横に1ドット追加し、サイズを101×101にしてください。</p>
     </div>
+    </div>
+
+
+    <div class="image-container">
+        <h2>元の画像</h2>
+        <img id="originalImage" style="display: none;">
+    </div>
+
+    <div>
+        <h2>分割された画像</h2>
+        <div id="slicedImages"></div>
     </div>
 
     <script>
@@ -140,25 +144,40 @@
                 img.src = event.target.result;
                 img.onload = function() {
                     const zip = new JSZip();
-                    const prefix = document.getElementById('filename').value.trim() || '';
+                    const prefix = document.getElementById('filename').value.trim() || 'slice_';
                     const slicedImagesContainer = document.getElementById('slicedImages');
                     slicedImagesContainer.innerHTML = '';
 
-                    let index = 1;
+                    let blobs = [];
                     for (let y = 0; y < img.height; y += sliceHeight) {
                         const sliceCanvas = document.createElement('canvas');
-                        sliceCanvas.width = img.width;
-                        sliceCanvas.height = sliceHeight;
                         const sliceCtx = sliceCanvas.getContext('2d');
-                        sliceCtx.drawImage(img, 0, y, img.width, sliceHeight, 0, 0, img.width, sliceHeight);
-                        
+                        sliceCanvas.width = 200;
+                        sliceCanvas.height = 200;
+
+                        // 背景を透明にする
+                        sliceCtx.clearRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+
+                        // 画像の中央配置計算
+                        const offsetX = (200 - img.width) / 2;
+                        const offsetY = (200 - img.height) / 2 + y;
+
+                        // 指定した高さのスライスを描画
+                        sliceCtx.drawImage(img, 0, y, img.width, sliceHeight, offsetX, offsetY, img.width, sliceHeight);
+
                         sliceCanvas.toBlob(blob => {
-                            zip.file(`${prefix}${index}.png`, blob);
-                            const imgElement = document.createElement('img');
-                            imgElement.src = URL.createObjectURL(blob);
-                            slicedImagesContainer.appendChild(imgElement);
-                            index++;
-                            if (index > Math.ceil(img.height / sliceHeight)) {
+                            blobs.push({ index: y + 1, blob: blob });
+                            if (blobs.length === Math.ceil(img.height / sliceHeight)) {
+                                blobs.sort((a, b) => a.index - b.index).forEach(({ index, blob }) => {
+                                    zip.file(`${prefix}${index}.png`, blob);
+
+                                    const imgElement = document.createElement('img');
+                                    imgElement.src = URL.createObjectURL(blob);
+                                    imgElement.style.display = 'block';
+                                    imgElement.style.marginBottom = '2px';
+                                    slicedImagesContainer.appendChild(imgElement);
+                                });
+
                                 zip.generateAsync({ type: 'blob' }).then(content => {
                                     const a = document.createElement('a');
                                     a.href = URL.createObjectURL(content);
