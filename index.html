@@ -35,10 +35,15 @@
             font-size: 24px;
             color: white;
             transition: transform 0.5s, opacity 0.5s, box-shadow 0.5s;
+            cursor: pointer;
         }
         .active {
-            opacity: 1;
+            opacity: 1 !important;
             box-shadow: 0 0 30px 10px rgba(255, 255, 255, 0.6);
+        }
+        .inactive {
+            opacity: 0.5;
+            pointer-events: none;
         }
         .nav-buttons {
             position: absolute;
@@ -57,59 +62,6 @@
             border-radius: 10px;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
         }
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease-in-out;
-        }
-        .overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-        .popup {
-            background: #fff;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-            width: 300px;
-        }
-        .popup h2 {
-            color: #333;
-        }
-        .popup-buttons {
-            margin-top: 20px;
-            display: flex;
-            justify-content: space-around;
-        }
-        .popup button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            cursor: pointer;
-            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
-        }
-        .follow-btn {
-            background: #007bff;
-            color: white;
-        }
-        .open-btn {
-            background: #28a745;
-            color: white;
-        }
-        .close-btn {
-            background: #ccc;
-        }
     </style>
 </head>
 <body>
@@ -125,25 +77,9 @@
         </div>
     </div>
     
-    <div class="overlay" id="overlay">
-        <div class="popup">
-            <h2>操作を選択してください</h2>
-            <div class="popup-buttons">
-                <button class="follow-btn" id="follow">フォローする</button>
-                <button class="open-btn" id="open">プログラムを開く</button>
-                <button class="close-btn" id="close">閉じる</button>
-            </div>
-        </div>
-    </div>
-    
     <script>
         const cards = document.querySelectorAll(".card");
-        const overlay = document.getElementById("overlay");
-        const followBtn = document.getElementById("follow");
-        const openBtn = document.getElementById("open");
-        const closeBtn = document.getElementById("close");
         let currentIndex = 0;
-        let selectedLink = "";
 
         function updateCards() {
             const angleStep = 360 / cards.length;
@@ -151,8 +87,13 @@
                 const angle = angleStep * index - (angleStep * currentIndex);
                 const translateZ = 300;
                 card.style.transform = `rotateY(${angle}deg) translateZ(${translateZ}px)`;
-                card.style.opacity = index === currentIndex ? "1" : "0.5";
-                card.classList.toggle("active", index === currentIndex);
+                if (index === currentIndex) {
+                    card.classList.add("active");
+                    card.classList.remove("inactive");
+                } else {
+                    card.classList.remove("active");
+                    card.classList.add("inactive");
+                }
             });
         }
 
@@ -166,23 +107,13 @@
             updateCards();
         });
 
-        cards.forEach(card => {
+        cards.forEach((card, index) => {
             card.addEventListener("click", () => {
-                selectedLink = card.getAttribute("data-link");
-                overlay.classList.add("active");
+                if (index === currentIndex) {
+                    const link = card.getAttribute("data-link");
+                    window.location.href = link;
+                }
             });
-        });
-
-        followBtn.addEventListener("click", () => {
-            window.location.href = "https://scratch.mit.edu/users/kikukick/";
-        });
-
-        openBtn.addEventListener("click", () => {
-            window.location.href = selectedLink;
-        });
-
-        closeBtn.addEventListener("click", () => {
-            overlay.classList.remove("active");
         });
 
         updateCards();
