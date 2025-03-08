@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+  
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cyberpunk Audio Visualizer</title>
@@ -41,9 +42,11 @@
             max-height: 200px;
             overflow-y: auto;
         }
+
     </style>
 </head>
 <body>
+
     <div id="controls">
         <input type="file" id="audioFile" accept="audio/*">
         <button id="exportData">データの書き出し</button>
@@ -52,6 +55,11 @@
     <div id="copyContainer"></div>
     <canvas id="visualizer"></canvas>
     <script>
+      
+      
+      //もっと？マジで言ってる？無理だが() 
+      
+      
         const canvas = document.getElementById("visualizer");
         const ctx = canvas.getContext("2d");
         const audioFileInput = document.getElementById("audioFile");
@@ -78,7 +86,7 @@
             source = audioCtx.createMediaElementSource(audio);
             source.connect(analyser);
             analyser.connect(audioCtx.destination);
-            analyser.fftSize = 2048;
+            analyser.fftSize = 8192;
             bufferLength = analyser.frequencyBinCount;
             dataArray = new Uint8Array(bufferLength);
             isPlaying = true;
@@ -103,11 +111,11 @@
             const radius = 100;
             const bars = 19;
             const angleStep = Math.PI / (bars - 1);
-          const lowFreqBoost = 3.0;
-          const midFreqBoost = 1.5;
+          const lowFreqBoost = 5.0;
+          const midFreqBoost = 3.0;
           const highFreqBoost = 1.2;
 
-            for (let i = 0; i < bars; i++) {
+            for ( i = 0; i < bars; i++) {
                 let index = Math.floor(i * bufferLength / bars);
                 let value = dataArray[index];
                 let barHeight = value*1.5;
