@@ -103,11 +103,14 @@
             const radius = 100;
             const bars = 19;
             const angleStep = Math.PI / (bars - 1);
+          const lowFreqBoost = 3.0;
+          const midFreqBoost = 1.5;
+          const highFreqBoost = 1.2;
 
             for (let i = 0; i < bars; i++) {
                 let index = Math.floor(i * bufferLength / bars);
                 let value = dataArray[index];
-                let barHeight = Math.log(value + 1) * 20;
+                let barHeight = value*1.5;
 
                 let angle = Math.PI / 2 - i * angleStep;
                 let x1 = centerX + Math.cos(angle) * radius;
