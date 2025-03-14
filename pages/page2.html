@@ -1,21 +1,18 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>画像スライサー最新版</title>
+    <title>画像スライサー最新版(v5.1)</title>
+    <!-- 更新したらvr変更忘れずに。後これ消さないこと -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-            body {
+        body {
             font-family: Arial, sans-serif;
             text-align: center;
             margin: 20px;
             background-color: #f8f9fa;
             color: #333;
-        }
-        h1, h2 {
-            color: #007bff;
         }
         .container {
             max-width: 600px;
@@ -44,11 +41,6 @@
         button:hover {
             background-color: #0056b3;
         }
-        .image-preview img {
-            max-width: 100%;
-            border-radius: 5px;
-            border: 2px solid #ccc;
-        }
         #slicedImages {
             display: flex;
             flex-wrap: wrap;
@@ -63,45 +55,16 @@
             border: 1px solid #ccc;
             border-radius: 3px;
         }
-        .instructions {
-            text-align: left;
-            font-size: 14px;
-            margin-top: 20px;
-            background: #e9ecef;
-            padding: 10px;
-            border-radius: 5px;
-        }
     </style>
 </head>
 <body>
-      <div class="container">
-    <h1>画像スライサー</h1>
-    <input type="file" id="imageInput" accept="image/*">
-    <input type="text" id="filename" placeholder="ファイル名のプレフィックス (例: slice)">
-    <input type="number" id="sliceHeight" placeholder="スライスの高さ (px)" min="1" value="1">
-    <button onclick="processImage()">画像を分割</button>
-            <div class="instructions">
-            <h2>使用方法</h2>
-            <ol>
-                <li>画像を選択</li>
-                <li>ファイル名のプレフィックスを入力（例: abc → abc1, abc2, ...）</li>
-                <li>スライスの高さを指定（デフォルト: 1px）</li>
-                <li>「スライスされた画像をダウンロード」ボタンを押す</li>
-                <li>ZIP形式でダウンロードされる</li>
-                <li>ZIPを解凍し、Scratchの「コスチュームを読み込む」からすべての画像を選択</li>
-                <li>プログラムを追加して完成</li>
-            </ol>
-        </div>
-            <div class="instructions">
-        <h2>バグ報告と対応</h2>
-        <p>Scratchではドット絵を描くと2dotで画像サイズが1と表記されるため、100×100の画像でも実際には100.5になる場合があります。そのため、正しく動作しないことがあります。解決策として、画像の横に1ドット追加し、サイズを101×101にしてください。</p>
-    </div>
-    </div>
-
-
-    <div class="image-container">
-        <h2>元の画像</h2>
-        <img id="originalImage" style="display: none;">
+    <div class="container">
+        <h1>画像スライサー</h1>
+        <input type="file" id="imageInput" accept="image/*">
+        <input type="text" id="filename" placeholder="ファイル名のプレフィックス (例: slice)">
+        <input type="number" id="sliceHeight" placeholder="スライスの高さ (px)" min="1" value="1">
+        <input type="number" id="numSlices" placeholder="同時に表示するスライス数 (k)" min="1" value="3">
+        <button onclick="processImage()">画像を分割</button>
     </div>
 
     <div>
@@ -110,20 +73,8 @@
     </div>
 
     <script>
-        document.getElementById('imageInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = document.getElementById('originalImage');
-                    img.src = e.target.result;
-                    img.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-
         function processImage() {
+            const CANVAS_SIZE = 400;
             const input = document.getElementById('imageInput');
             if (!input.files.length) {
                 alert('画像を選択してください');
@@ -132,8 +83,9 @@
 
             const file = input.files[0];
             const sliceHeight = parseInt(document.getElementById('sliceHeight').value, 10);
-            if (isNaN(sliceHeight) || sliceHeight < 1) {
-                alert('スライスの高さを1以上の整数で入力してください');
+            const numSlices = parseInt(document.getElementById('numSlices').value, 10);
+            if (isNaN(sliceHeight) || sliceHeight < 1 || isNaN(numSlices) || numSlices < 1) {
+                alert('スライスの高さと表示スライス数を適切な値に設定してください');
                 return;
             }
 
@@ -150,22 +102,27 @@
 
                     let blobs = [];
                     for (let y = 0; y < img.height; y += sliceHeight) {
-                        const sliceCanvas = document.createElement('canvas');
-                        const sliceCtx = sliceCanvas.getContext('2d');
-                        sliceCanvas.width = 200;
-                        sliceCanvas.height = 200;
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = CANVAS_SIZE;
+                        canvas.height = CANVAS_SIZE;
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-                        // 背景を透明にする
-                        sliceCtx.clearRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+                        // 画像の中央を基準にY座標を調整
+                        const offsetX = (CANVAS_SIZE - img.width) / 2;
+                        let offsetY = (CANVAS_SIZE - img.height) / 2 + y;
+                        if (y === 0) {
+                            offsetY = (CANVAS_SIZE - (sliceHeight * numSlices)) / 2; // 中心に配置
+                        }
 
-                        // 画像の中央配置計算
-                        const offsetX = (200 - img.width) / 2;
-                        const offsetY = (200 - img.height) / 2 + y;
+                        for (let i = 0; i < numSlices; i++) {
+                            let sliceY = y + i * sliceHeight;
+                            if (sliceY < img.height) {
+                                ctx.drawImage(img, 0, sliceY, img.width, sliceHeight, offsetX, offsetY + (i * sliceHeight), img.width, sliceHeight);
+                            }
+                        }
 
-                        // 指定した高さのスライスを描画
-                        sliceCtx.drawImage(img, 0, y, img.width, sliceHeight, offsetX, offsetY, img.width, sliceHeight);
-
-                        sliceCanvas.toBlob(blob => {
+                        canvas.toBlob(blob => {
                             blobs.push({ index: y + 1, blob: blob });
                             if (blobs.length === Math.ceil(img.height / sliceHeight)) {
                                 blobs.sort((a, b) => a.index - b.index).forEach(({ index, blob }) => {
