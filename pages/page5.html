@@ -1,191 +1,208 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <title>sb3 Generator</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SB3 Project Generator</title>
+  <script src="https://cdn.jsdelivr.net/npm/js-md5@0.7.3/build/md5.min.js"></script>
 </head>
 <body>
-  <input type="text" id="text" placeholder="abcや日本語など">
-  <button onclick="generate()">Generate sb3</button>
-
-  <script src="https://stuk.github.io/jszip/dist/jszip.min.js"></script>
-
+  <h1>SB3 Project Generator</h1>
+  
+  <input type="file" id="imageInput" accept="image/*" onchange="loadImage()">
+  <input type="text" id="text" placeholder="Enter text here">
+  <button onclick="generate()">Generate SB3</button>
+  
   <script>
-    const baseUrl = 'https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/pages/';
-    
-    async function fetchBinary(url) {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`Fetch failed: ${url}`);
-      return await response.blob();
-    }
-
     async function md5FromBlob(blob) {
       const arrayBuffer = await blob.arrayBuffer();
-      const hashBuffer = await crypto.subtle.digest('MD5', arrayBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      const uint8Array = new Uint8Array(arrayBuffer);
+      const hash = md5(uint8Array);
+      return hash;
+    }
+
+    async function loadImage(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = async function (e) {
+          const arrayBuffer = e.target.result;
+          const hash = md5(new Uint8Array(arrayBuffer));
+          console.log("MD5 Hash:", hash);  // ハッシュ値を確認
+        };
+        reader.readAsArrayBuffer(file);
+      }
     }
 
     async function generate() {
-      const input = document.getElementById('text').value;
-      const chars = input.split('');
+      try {
+        const input = document.getElementById('text').value;
+        const chars = input.split('');
+        const zip = new JSZip();
 
-      const zip = new JSZip();
+        // 背景画像
+        const backdropBlob = await fetchBinary(baseUrl + 'image.png');
+        const backdropId = await md5FromBlob(backdropBlob);
+        zip.file(backdropId + '.png', backdropBlob);
 
-      // 背景画像
-      const backdropBlob = await fetchBinary(baseUrl + 'img.png');
-      const backdropId = await md5FromBlob(backdropBlob);
-      zip.file(backdropId + '.png', backdropBlob);
+        // スプライト画像
+        const spriteBlob = await fetchBinary(baseUrl + 'image.png');
+        const spriteId = await md5FromBlob(spriteBlob);
+        zip.file(spriteId + '.png', spriteBlob);
 
-      // スプライト画像
-      const spriteBlob = await fetchBinary(baseUrl + 'img.png');
-      const spriteId = await md5FromBlob(spriteBlob);
-      zip.file(spriteId + '.png', spriteBlob);
+        const listId = '`ohQAP6;/tvdx!?.gg7f';
+        const listName = 'list';
 
-      const listId = '`ohQAP6;/tvdx!?.gg7f';
-      const listName = 'list';
+        const blocks = {};
+        let lastId = null;
+        let topId = makeId();
 
-      // ブロック構造を作成
-      const blocks = {};
-      let lastId = null;
-      let topId = makeId();
-
-      blocks[topId] = {
-        opcode: 'event_whenflagclicked',
-        next: null,
-        parent: null,
-        inputs: {},
-        fields: {},
-        shadow: false,
-        topLevel: true,
-        x: 10,
-        y: 10
-      };
-
-      let currentId = makeId();
-      blocks[topId].next = currentId;
-
-      blocks[currentId] = {
-        opcode: 'data_deletealloflist',
-        next: null,
-        parent: topId,
-        inputs: {},
-        fields: { LIST: [listName, listId] },
-        shadow: false,
-        topLevel: false
-      };
-
-      lastId = currentId;
-
-      for (let i = 0; i < chars.length; i++) {
-        const addId = makeId();
-        blocks[addId] = {
-          opcode: 'data_addtolist',
+        blocks[topId] = {
+          opcode: 'event_whenflagclicked',
           next: null,
-          parent: lastId,
-          inputs: { ITEM: [1, [10, chars[i]]] },
+          parent: null,
+          inputs: {},
+          fields: {},
+          shadow: false,
+          topLevel: true,
+          x: 10,
+          y: 10
+        };
+
+        let currentId = makeId();
+        blocks[topId].next = currentId;
+
+        blocks[currentId] = {
+          opcode: 'data_deletealloflist',
+          next: null,
+          parent: topId,
+          inputs: {},
           fields: { LIST: [listName, listId] },
           shadow: false,
           topLevel: false
         };
-        blocks[lastId].next = addId;
-        lastId = addId;
-      }
 
-      const project = {
-        targets: [
-          {
-            isStage: true,
-            name: "Stage",
-            variables: {},
-            lists: { [listId]: [listName, chars] },
-            broadcasts: {},
-            blocks: {},
-            comments: {},
-            currentCostume: 0,
-            costumes: [{
-              name: "back",
-              dataFormat: "png",
-              assetId: backdropId,
-              md5ext: backdropId + ".png",
-              rotationCenterX: 240,
-              rotationCenterY: 180
-            }],
-            sounds: [],
-            volume: 100,
-            layerOrder: 0,
-            tempo: 60,
-            videoTransparency: 50,
-            videoState: "on",
-            textToSpeechLanguage: null
-          },
-          {
-            isStage: false,
-            name: "sprite",
-            variables: {},
-            lists: {},
-            broadcasts: {},
-            blocks,
-            comments: {},
-            currentCostume: 0,
-            costumes: [{
-              name: "sprite",
-              bitmapResolution: 2,
-              dataFormat: "png",
-              assetId: spriteId,
-              md5ext: spriteId + ".png",
-              rotationCenterX: 0,
-              rotationCenterY: 0
-            }],
-            sounds: [],
-            volume: 100,
-            layerOrder: 1,
-            visible: true,
-            x: 0,
-            y: 0,
-            size: 100,
-            direction: 90,
-            draggable: false,
-            rotationStyle: "all around"
-          }
-        ],
-        monitors: [{
-          id: listId,
-          mode: "list",
-          opcode: "data_listcontents",
-          params: { LIST: listName },
-          spriteName: null,
-          value: [],
-          width: 0,
-          height: 0,
-          x: 5,
-          y: 5,
-          visible: true
-        }],
-        extensions: [],
-        meta: {
-          semver: "3.0.0",
-          vm: "0.2.0",
-          agent: "",
-          platform: {
-            name: "TurboWarp",
-            url: "https://turbowarp.org/"
-          }
+        lastId = currentId;
+
+        for (let i = 0; i < chars.length; i++) {
+          const addId = makeId();
+          blocks[addId] = {
+            opcode: 'data_addtolist',
+            next: null,
+            parent: lastId,
+            inputs: { ITEM: [1, [10, chars[i]]] },
+            fields: { LIST: [listName, listId] },
+            shadow: false,
+            topLevel: false
+          };
+          blocks[lastId].next = addId;
+          lastId = addId;
         }
-      };
 
-      zip.file("project.json", JSON.stringify(project));
-      const blob = await zip.generateAsync({ type: "blob" });
-      const url = URL.createObjectURL(blob);
+        const project = {
+          targets: [
+            {
+              isStage: true,
+              name: "Stage",
+              variables: {},
+              lists: { [listId]: [listName, chars] },
+              broadcasts: {},
+              blocks: {},
+              comments: {},
+              currentCostume: 0,
+              costumes: [{
+                name: "back",
+                dataFormat: "png",
+                assetId: backdropId,
+                md5ext: backdropId + ".png",
+                rotationCenterX: 240,
+                rotationCenterY: 180
+              }],
+              sounds: [],
+              volume: 100,
+              layerOrder: 0,
+              tempo: 60,
+              videoTransparency: 50,
+              videoState: "on",
+              textToSpeechLanguage: null
+            },
+            {
+              isStage: false,
+              name: "sprite",
+              variables: {},
+              lists: {},
+              broadcasts: {},
+              blocks,
+              comments: {},
+              currentCostume: 0,
+              costumes: [{
+                name: "sprite",
+                bitmapResolution: 2,
+                dataFormat: "png",
+                assetId: spriteId,
+                md5ext: spriteId + ".png",
+                rotationCenterX: 0,
+                rotationCenterY: 0
+              }],
+              sounds: [],
+              volume: 100,
+              layerOrder: 1,
+              visible: true,
+              x: 0,
+              y: 0,
+              size: 100,
+              direction: 90,
+              draggable: false,
+              rotationStyle: "all around"
+            }
+          ],
+          monitors: [{
+            id: listId,
+            mode: "list",
+            opcode: "data_listcontents",
+            params: { LIST: listName },
+            spriteName: null,
+            value: [],
+            width: 0,
+            height: 0,
+            x: 5,
+            y: 5,
+            visible: true
+          }],
+          extensions: [],
+          meta: {
+            semver: "3.0.0",
+            vm: "0.2.0",
+            agent: "",
+            platform: {
+              name: "TurboWarp",
+              url: "https://turbowarp.org/"
+            }
+          }
+        };
 
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "generated.sb3";
-      a.click();
+        zip.file("project.json", JSON.stringify(project));
+        const blob = await zip.generateAsync({ type: "blob" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "generated.sb3";
+        a.click();
+
+      } catch (error) {
+        console.error('Error generating sb3:', error);
+      }
     }
 
     function makeId() {
       return Math.random().toString(36).substr(2, 10);
+    }
+
+    async function fetchBinary(url) {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch image');
+      return await response.blob();
     }
   </script>
 </body>
