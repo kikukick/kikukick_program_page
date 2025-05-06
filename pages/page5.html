@@ -43,13 +43,13 @@
       const zip = new JSZip();
 
       // 背景画像
-      const backdropBlob = await fetchBinary(baseUrl + 'img.png');
+      const backdropBlob = await fetchBinary(baseUrl + 'image.png');
       if (!backdropBlob) return; // エラーチェック
       const backdropId = await md5FromBlob(backdropBlob);
       zip.file(backdropId + '.png', backdropBlob);
 
       // スプライト画像
-      const spriteBlob = await fetchBinary(baseUrl + 'img.png');
+      const spriteBlob = await fetchBinary(baseUrl + 'image.png');
       if (!spriteBlob) return; // エラーチェック
       const spriteId = await md5FromBlob(spriteBlob);
       zip.file(spriteId + '.png', spriteBlob);
