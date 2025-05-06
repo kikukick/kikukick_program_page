@@ -3,16 +3,58 @@
 <head>
   <meta charset="utf-8">
   <title>sb3 Generator</title>
+  <script src="https://stuk.github.io/jszip/dist/jszip.min.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f7f7f7;
+      text-align: center;
+      padding: 40px;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+      margin: 10px;
+    }
+    #template-buttons button {
+      margin: 5px;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      display: inline-block;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+    }
+  </style>
 </head>
 <body>
-  <input type="text" id="text" placeholder="abcや日本語など">
-  <button onclick="generate()">Generate sb3</button>
+  <div class="container">
+    <h1>sb3 Generator</h1>
+    <p>使い方：文字を入力するかテンプレートを追加し、「Generate sb3」を押すと.sb3ファイルが生成されます。</p>
 
-  <script src="https://stuk.github.io/jszip/dist/jszip.min.js"></script>
+    <input type="text" id="text" placeholder="abcや日本語など">
+    <br>
+    <div id="template-buttons">
+      <button onclick="addTemplate('1234567890')">数字テンプレート1</button>
+      <button onclick="addTemplate('キクキック')">イクイックテンプレート2</button>
+      <button onclick="addTemplate('ABCDEFGHIJKLMNOPQRSTUWVXYZ')">ABCテンプレート3</button>
+    </div>
+    <br>
+    <button onclick="generate()">Generate sb3</button>
+  </div>
 
   <script>
     const baseUrl = 'https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/pages/';
-    
+
+    function addTemplate(text) {
+      const input = document.getElementById('text');
+      input.value += text;
+    }
+
     async function fetchBinary(url) {
       try {
         const response = await fetch(url);
@@ -23,7 +65,6 @@
       }
     }
 
-    // ハッシュ生成部分を修正
     async function md5FromBlob(blob) {
       try {
         const arrayBuffer = await blob.arrayBuffer();
@@ -35,29 +76,23 @@
       }
     }
 
-    // メイン生成処理
     async function generate() {
       const input = document.getElementById('text').value;
       const chars = input.split('');
-
       const zip = new JSZip();
 
-      // 背景画像
       const backdropBlob = await fetchBinary(baseUrl + 'image.png');
-      if (!backdropBlob) return; // エラーチェック
+      if (!backdropBlob) return;
       const backdropId = await md5FromBlob(backdropBlob);
       zip.file(backdropId + '.png', backdropBlob);
 
-      // スプライト画像
       const spriteBlob = await fetchBinary(baseUrl + 'image.png');
-      if (!spriteBlob) return; // エラーチェック
+      if (!spriteBlob) return;
       const spriteId = await md5FromBlob(spriteBlob);
       zip.file(spriteId + '.png', spriteBlob);
 
       const listId = '`ohQAP6;/tvdx!?.gg7f';
       const listName = 'list';
-
-      // ブロック構造を作成
       const blocks = {};
       let lastId = null;
       let topId = makeId();
