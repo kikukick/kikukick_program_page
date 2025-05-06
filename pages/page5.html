@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>SB3 Generator</title>
+</head>
+<body>
+  <input type="text" id="text" placeholder="abc など">
+  <button onclick="generateSB3()">生成</button>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script>
+    async function fetchBinary(url) {
+      const res = await fetch(url);
+      return await res.arrayBuffer();
+    }
+
+    function generateBlocks(text, listName, listId) {
+      const letters = text.split('');
+      const blocks = {};
+      const ids = letters.map((_, i) => 'blk_' + i);
+      const deleteId = 'blk_delete';
+      const flagId = 'blk_flag';
+
+      
+      blocks[flagId] = {
+        opcode: "event_whenflagclicked",
+        next: deleteId,
+        parent: null,
+        inputs: {},
+        fields: {},
+        shadow: false,
+        topLevel: true,
+        x: 10,
+        y: 10
+      };
+      blocks[deleteId] = {
+        opcode: "data_deletealloflist",
+        next: ids[0] || null,
+        parent: flagId,
+        inputs: {},
+        fields: { LIST: [listName, listId] },
+        shadow: false,
+        topLevel: false
+      };
+      for (let i = 0; i < letters.length; i++) {
+        blocks[ids[i]] = {
+          opcode: "data_addtolist",
+          next: ids[i + 1] || null,
+          parent: i === 0 ? deleteId : ids[i - 1],
+          inputs: {
+            ITEM: [1, [10, letters[i]]]
+          },
+          fields: {
+            LIST: [listName, listId]
+          },
+          shadow: false,
+          topLevel: false
+        };
+      }
+
+      return blocks;
+    }
+
+    async function generateSB3() {
+      const zip = new JSZip();
+      const listId = '`ohQAP6;/tvdx!?.gg7f';
+      const listName = '文字列';
+
+      // GitHubの画像URL（ユーザー名・リポジトリ・ブランチに変更すること！）
+      const baseUrl = 'https://github.com/kikukick/kikukick_program_page/blob/main/pages/img.png';
+      const backSvg = await fetchBinary(baseUrl + 'img.png');
+      const spritePng = await fetchBinary(baseUrl + 'img.png');
+
+      zip.file('image.svg', backSvg);
+      zip.file('image.png', spritePng);
+
+      const text = document.getElementById('text').value || 'abc';
+      const spriteBlocks = generateBlocks(text, listName, listId);
+
+      const project = {
+        targets: [
+          {
+            isStage: true,
+            name: 'Stage',
+            variables: {},
+            lists: {
+              [listId]: [listName, text.split('')]
+            },
+            broadcasts: {},
+            blocks: {},
+            comments: {},
+            currentCostume: 0,
+            costumes: [{
+              name: "back",
+              dataFormat: "svg",
+              assetId: "image",
+              md5ext: "image.svg",
+              rotationCenterX: 240,
+              rotationCenterY: 180
+            }],
+            sounds: [],
+            volume: 100,
+            layerOrder: 0,
+            tempo: 60,
+            videoTransparency: 50,
+            videoState: "on",
+            textToSpeechLanguage: null
+          },
+          {
+            isStage: false,
+            name: 'sprite',
+            variables: {},
+            lists: {},
+            broadcasts: {},
+            blocks: spriteBlocks,
+            comments: {},
+            currentCostume: 0,
+            costumes: [{
+              name: "",
+              bitmapResolution: 2,
+              dataFormat: "png",
+              assetId: "image",
+              md5ext: "image.png",
+              rotationCenterX: 0,
+              rotationCenterY: 0
+            }],
+            sounds: [],
+            volume: 100,
+            layerOrder: 1,
+            visible: true,
+            x: 0,
+            y: 0,
+            size: 100,
+            direction: 90,
+            draggable: false,
+            rotationStyle: "all around"
+          }
+        ],
+        monitors: [{
+          id: listId,
+          mode: "list",
+          opcode: "data_listcontents",
+          params: { LIST: listName },
+          spriteName: null,
+          value: [],
+          width: 0,
+          height: 0,
+          x: 5,
+          y: 5,
+          visible: true
+        }],
+        extensions: [],
+        meta: {
+          semver: "3.0.0",
+          vm: "0.2.0",
+          agent: "",
+          platform: {
+            name: "TurboWarp",
+            url: "https://turbowarp.org/"
+          }
+        }
+      };
+
+      zip.file('project.json', JSON.stringify(project));
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'project.sb3';
+      a.click();
+    }
+  </script>
+</body>
+</html>
