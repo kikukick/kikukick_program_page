@@ -12,12 +12,27 @@
       padding: 40px;
     }
     input, button {
-      padding: 10px;
+      padding: 10px 20px;
       font-size: 16px;
       margin: 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+    }
+    button:hover {
+      background-color: #45a049;
     }
     #template-buttons button {
       margin: 5px;
+      background-color: #2196F3;
+    }
+    #template-buttons button:hover {
+      background-color: #1976D2;
     }
     .container {
       background: white;
@@ -34,11 +49,10 @@
 <body>
   <div class="container">
     <h1>Scratch List Generator</h1>
-    <h3>使い方：文字を入力するかテンプレートを追加し、「Generate sb3」を押すと.sb3ファイルが生成されます。</h3>
-    <h3>例：12345abcdeを入力すると以下のようなsb3ファイルがDLされる。</h3>
-　　　<img src="https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/images/page5.png" 
-     alt="サンプル画像" 
-     style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1); margin: 20px 0;">
+    <h3>文字を入力し、「Generate sb3」または「Generate sprite3」を押してください。</h3>
+    <img src="https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/images/page5.png" 
+         alt="サンプル画像" 
+         style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 0 5px rgba(0,0,0,0.1); margin: 20px 0;">
     <input type="text" id="text" placeholder="abcや日本語など">
     <br>
     <div id="template-buttons">
@@ -48,6 +62,7 @@
     </div>
     <br>
     <button onclick="generate()">Generate sb3</button>
+    <button onclick="generateSprite3()">Generate sprite3</button>
   </div>
 
   <script>
@@ -69,37 +84,19 @@
     }
 
     async function md5FromBlob(blob) {
-      try {
-        const arrayBuffer = await blob.arrayBuffer();
-        const hashBuffer = await crypto.subtle.digest('MD5', arrayBuffer);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-      } catch (error) {
-        console.error('MD5 Error:', error);
-      }
+      const arrayBuffer = await blob.arrayBuffer();
+      const hashBuffer = await crypto.subtle.digest('MD5', arrayBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    async function generate() {
-      const input = document.getElementById('text').value;
-      const chars = input.split('');
-      const zip = new JSZip();
+    function makeId() {
+      return Math.random().toString(36).substr(2, 10);
+    }
 
-      const backdropBlob = await fetchBinary(baseUrl + 'image.png');
-      if (!backdropBlob) return;
-      const backdropId = await md5FromBlob(backdropBlob);
-      zip.file(backdropId + '.png', backdropBlob);
-
-      const spriteBlob = await fetchBinary(baseUrl + 'image.png');
-      if (!spriteBlob) return;
-      const spriteId = await md5FromBlob(spriteBlob);
-      zip.file(spriteId + '.png', spriteBlob);
-
-      const listId = '`ohQAP6;/tvdx!?.gg7f';
-      const listName = 'list';
+    function createBlocks(chars, listId, listName) {
       const blocks = {};
-      let lastId = null;
-      let topId = makeId();
-
+      const topId = makeId();
       blocks[topId] = {
         opcode: 'event_whenflagclicked',
         next: null,
@@ -111,10 +108,8 @@
         x: 10,
         y: 10
       };
-
       let currentId = makeId();
       blocks[topId].next = currentId;
-
       blocks[currentId] = {
         opcode: 'data_deletealloflist',
         next: null,
@@ -124,8 +119,7 @@
         shadow: false,
         topLevel: false
       };
-
-      lastId = currentId;
+      let lastId = currentId;
 
       for (let i = 0; i < chars.length; i++) {
         const addId = makeId();
@@ -141,101 +135,146 @@
         blocks[lastId].next = addId;
         lastId = addId;
       }
+      return { blocks, topId };
+    }
 
-      const project = {
-        targets: [
-          {
-            isStage: true,
-            name: "Stage",
-            variables: {},
-            lists: { [listId]: [listName, chars] },
-            broadcasts: {},
-            blocks: {},
-            comments: {},
-            currentCostume: 0,
-            costumes: [{
-              name: "back",
-              dataFormat: "png",
-              assetId: backdropId,
-              md5ext: backdropId + ".png",
-              rotationCenterX: 240,
-              rotationCenterY: 180
-            }],
-            sounds: [],
-            volume: 100,
-            layerOrder: 0,
-            tempo: 60,
-            videoTransparency: 50,
-            videoState: "on",
-            textToSpeechLanguage: null
-          },
-          {
-            isStage: false,
-            name: "sprite",
-            variables: {},
-            lists: {},
-            broadcasts: {},
-            blocks,
-            comments: {},
-            currentCostume: 0,
-            costumes: [{
-              name: "sprite",
-              bitmapResolution: 2,
-              dataFormat: "png",
-              assetId: spriteId,
-              md5ext: spriteId + ".png",
-              rotationCenterX: 0,
-              rotationCenterY: 0
-            }],
-            sounds: [],
-            volume: 100,
-            layerOrder: 1,
-            visible: true,
-            x: 0,
-            y: 0,
-            size: 100,
-            direction: 90,
-            draggable: false,
-            rotationStyle: "all around"
-          }
-        ],
-        monitors: [{
-          id: listId,
-          mode: "list",
-          opcode: "data_listcontents",
-          params: { LIST: listName },
-          spriteName: null,
-          value: [],
-          width: 0,
-          height: 0,
-          x: 5,
-          y: 5,
-          visible: true
+    async function generateProjectJson(isSpriteOnly = false) {
+      const input = document.getElementById('text').value;
+      const chars = input.split('');
+      const listId = '`ohQAP6;/tvdx!?.gg7f';
+      const listName = 'list';
+
+      const backdropBlob = await fetchBinary(baseUrl + 'image.png');
+      if (!backdropBlob) return;
+      const backdropId = await md5FromBlob(backdropBlob);
+
+      const spriteBlob = await fetchBinary(baseUrl + 'image.png');
+      if (!spriteBlob) return;
+      const spriteId = await md5FromBlob(spriteBlob);
+
+      const { blocks } = createBlocks(chars, listId, listName);
+
+      const sprite = {
+        isStage: false,
+        name: "sprite",
+        variables: {},
+        lists: {},
+        broadcasts: {},
+        blocks,
+        comments: {},
+        currentCostume: 0,
+        costumes: [{
+          name: "sprite",
+          bitmapResolution: 2,
+          dataFormat: "png",
+          assetId: spriteId,
+          md5ext: spriteId + ".png",
+          rotationCenterX: 0,
+          rotationCenterY: 0
         }],
-        extensions: [],
-        meta: {
-          semver: "3.0.0",
-          vm: "0.2.0",
-          agent: "",
-          platform: {
-            name: "TurboWarp",
-            url: "https://turbowarp.org/"
-          }
-        }
+        sounds: [],
+        volume: 100,
+        layerOrder: 1,
+        visible: true,
+        x: 0,
+        y: 0,
+        size: 100,
+        direction: 90,
+        draggable: false,
+        rotationStyle: "all around"
       };
 
-      zip.file("project.json", JSON.stringify(project));
+      if (isSpriteOnly) {
+        return { json: sprite };
+      }
+
+      const stage = {
+        isStage: true,
+        name: "Stage",
+        variables: {},
+        lists: { [listId]: [listName, chars] },
+        broadcasts: {},
+        blocks: {},
+        comments: {},
+        currentCostume: 0,
+        costumes: [{
+          name: "back",
+          dataFormat: "png",
+          assetId: backdropId,
+          md5ext: backdropId + ".png",
+          rotationCenterX: 240,
+          rotationCenterY: 180
+        }],
+        sounds: [],
+        volume: 100,
+        layerOrder: 0,
+        tempo: 60,
+        videoTransparency: 50,
+        videoState: "on",
+        textToSpeechLanguage: null
+      };
+
+      return {
+        json: {
+          targets: [stage, sprite],
+          monitors: [{
+            id: listId,
+            mode: "list",
+            opcode: "data_listcontents",
+            params: { LIST: listName },
+            spriteName: null,
+            value: [],
+            width: 0,
+            height: 0,
+            x: 5,
+            y: 5,
+            visible: true
+          }],
+          extensions: [],
+          meta: {
+            semver: "3.0.0",
+            vm: "0.2.0",
+            agent: "",
+            platform: {
+              name: "TurboWarp",
+              url: "https://turbowarp.org/"
+            }
+          }
+        },
+        assets: [
+          { id: backdropId, blob: backdropBlob },
+          { id: spriteId, blob: spriteBlob }
+        ]
+      };
+    }
+
+    async function generate() {
+      const project = await generateProjectJson();
+      if (!project) return;
+      const zip = new JSZip();
+      for (const asset of project.assets) {
+        zip.file(`${asset.id}.png`, asset.blob);
+      }
+      zip.file("project.json", JSON.stringify(project.json));
       const blob = await zip.generateAsync({ type: "blob" });
       const url = URL.createObjectURL(blob);
-
       const a = document.createElement("a");
       a.href = url;
-      a.download = "Lsit Generated.sb3";
+      a.download = "List Generated.sb3";
       a.click();
     }
 
-    function makeId() {
-      return Math.random().toString(36).substr(2, 10);
+    async function generateSprite3() {
+      const result = await generateProjectJson(true);
+      if (!result) return;
+      const zip = new JSZip();
+      zip.file("project.json", JSON.stringify(result.json));
+      const blob = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Sprite List.sprite3";
+      a.click();
     }
   </script>
 </body>
