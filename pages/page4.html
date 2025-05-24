@@ -1,35 +1,115 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>SDF to Scratch Sprite</title>
+  <meta charset="UTF-8" />
+  <title>SDF Visualize & Export to Scratch Sprite</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <style>
+    body {
+      background: black;
+      color: white;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+    }
+    canvas {
+      background: black;
+    }
+    textarea {
+      width: 90%;
+      height: 100px;
+      margin-top: 10px;
+    }
+    button {
+      margin: 5px;
+      padding: 8px 16px;
+    }
+  </style>
 </head>
 <body>
-  <h2>SDFデータを入力</h2>
-  <textarea id="sdfInput" rows="10" cols="60" placeholder="[A]:001,002,.../[B]:.../...;"></textarea><br>
-  <button id="generateBtn">sprite3を生成してDL</button>
+  <h2>🎵 オーディオをアップロードしてSDF生成</h2>
+  <input type="file" id="audioFile" accept="audio/*" />
+  <canvas id="canvas"></canvas>
+
+  <h3>📋 SDF出力（編集可能）</h3>
+  <textarea id="sdfTextArea" placeholder="[A]:000,001,002/...;"></textarea><br>
+  <button id="exportSpriteBtn">sprite3を生成してDL</button>
 
   <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = 300;
+    const numBars = 190;
+    let audioContext, analyser, dataArray, collectedData = [];
+
+    document.getElementById("audioFile").addEventListener("change", function () {
+      const file = this.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const audio = new Audio(e.target.result);
+        audio.loop = true;
+        audio.play();
+        setupAudioContext(audio);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function setupAudioContext(audio) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaElementSource(audio);
+      source.connect(analyser);
+      analyser.connect(audioContext.destination);
+      analyser.fftSize = 256;
+      dataArray = new Uint8Array(analyser.frequencyBinCount);
+      collectedData = [];
+
+      setInterval(() => {
+        analyser.getByteFrequencyData(dataArray);
+        const frame = Array.from(dataArray.slice(0, 190)).map(x => String(x).padStart(3, "0"));
+        collectedData.push(frame);
+        updateSDFText();
+      }, 50);
+
+      drawBars();
+    }
+
+    function drawBars() {
+      requestAnimationFrame(drawBars);
+      if (!analyser) return;
+      analyser.getByteFrequencyData(dataArray);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const barWidth = canvas.width / numBars;
+      for (let i = 0; i < numBars; i++) {
+        const height = dataArray[i];
+        ctx.fillStyle = `hsl(${i * 360 / numBars}, 100%, 50%)`;
+        ctx.fillRect(i * barWidth, canvas.height - height, barWidth - 1, height);
+      }
+    }
+
+    function updateSDFText() {
+      const letters = "ABCDEFGHIJKLMNOPQRS".split("");
+      const lists = Array(19).fill().map(() => []);
+      collectedData.forEach(frame => {
+        for (let i = 0; i < 19; i++) {
+          lists[i].push(frame[i * 10]); // 抽出（10飛ばし）
+        }
+      });
+      const sdf = lists.map((list, i) => `[${letters[i]}]:${list.join(",")}`).join("/");
+      document.getElementById("sdfTextArea").value = sdf;
+    }
+
     const listIdMap = {
-      A: "wrjicyhmuu[z,K{Ac*?7",
-      B: "M~E+sSuFf0S^h!#u)uRO",
-      C: ")J#bVgJXl+lus%%sY,N1",
-      D: "GgA5?^h0@^_@0_72Zvsx",
-      E: "qZKwKaO2Feywh43^p}Ls",
-      F: "1Cz-*ryy;gF^5]ZAanfS",
-      G: "?LQ0TxT|[cBZsm).|7qR",
-      H: "+_.2N~a]F;E@D3Ri)*Hs",
-      I: "zu!d#cLmu:p)rtvifjBA",
-      J: "ct*M#U-GfnqrR6i-mA]D",
-      K: "/rJ=`R,!v!=GoUmHkS^l",
-      L: "N-n]=sxgVM:M;zuCe:5b",
-      M: "Cq(Soa:;8`3N+F~ZCZ.d",
-      N: "(1A6Qj7bJFq!tuAQ3Jqv",
-      O: "Cb.YPA0Y/?q:@|W}^WT!",
-      P: "]eRbhH$O@:G8-DAhSx%X",
-      Q: "IygaQ}!z3FI_NN%Xs,RX",
-      R: ".MR#i{o(C8cW61jupx2,",
+      A: "wrjicyhmuu[z,K{Ac*?7", B: "M~E+sSuFf0S^h!#u)uRO", C: ")J#bVgJXl+lus%%sY,N1",
+      D: "GgA5?^h0@^_@0_72Zvsx", E: "qZKwKaO2Feywh43^p}Ls", F: "1Cz-*ryy;gF^5]ZAanfS",
+      G: "?LQ0TxT|[cBZsm).|7qR", H: "+_.2N~a]F;E@D3Ri)*Hs", I: "zu!d#cLmu:p)rtvifjBA",
+      J: "ct*M#U-GfnqrR6i-mA]D", K: "/rJ=`R,!v!=GoUmHkS^l", L: "N-n]=sxgVM:M;zuCe:5b",
+      M: "Cq(Soa:;8`3N+F~ZCZ.d", N: "(1A6Qj7bJFq!tuAQ3Jqv", O: "Cb.YPA0Y/?q:@|W}^WT!",
+      P: "]eRbhH$O@:G8-DAhSx%X", Q: "IygaQ}!z3FI_NN%Xs,RX", R: ".MR#i{o(C8cW61jupx2,",
       S: "DaQ(?yN~oH}].{;f(KTw"
     };
 
@@ -46,20 +126,19 @@
       return result;
     }
 
-    document.getElementById("generateBtn").onclick = async () => {
-      const sdfText = document.getElementById("sdfInput").value;
+    document.getElementById("exportSpriteBtn").onclick = async () => {
+      const sdfText = document.getElementById("sdfTextArea").value;
       const sdfData = parseSDF(sdfText);
-
-      const response = await fetch("https://raw.githubusercontent.com/ex/ex/.sprite3/new");
+      const response = await fetch("https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/pages/.sprite3/例.sprite3
+");
       const blob = await response.blob();
-
       const zip = await JSZip.loadAsync(blob);
       const spriteJson = JSON.parse(await zip.file("sprite.json").async("string"));
 
       for (const key in sdfData) {
         const id = listIdMap[key];
         if (spriteJson.lists && id in spriteJson.lists) {
-          spriteJson.lists[id][1] = sdfData[key]; // データ上書き
+          spriteJson.lists[id][1] = sdfData[key];
         }
       }
 
@@ -68,7 +147,7 @@
 
       const a = document.createElement("a");
       a.href = URL.createObjectURL(newBlob);
-      a.download = "sdf_output.sprite3";
+      a.download = "output_with_sdf.sprite3";
       a.click();
     };
   </script>
