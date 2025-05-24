@@ -134,12 +134,14 @@
       const zip = await JSZip.loadAsync(blob);
       const spriteJson = JSON.parse(await zip.file("sprite.json").async("string"));
 
-      for (const key in sdfData) {
-        const id = listIdMap[key];
-        if (spriteJson.lists && id in spriteJson.lists) {
-          spriteJson.lists[id][1] = sdfData[key];
-        }
-      }
+for (const key in sdfData) {
+  const id = listIdMap[key];
+  if (spriteJson.lists && id in spriteJson.lists) {
+    // [リスト名, 新しい配列] の形式を維持
+    const listName = spriteJson.lists[id][0];
+    spriteJson.lists[id] = [listName, sdfData[key]];
+  }
+}
 
       zip.file("sprite.json", JSON.stringify(spriteJson, null, 2));
       const newBlob = await zip.generateAsync({ type: "blob" });
