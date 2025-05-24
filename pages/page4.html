@@ -31,6 +31,7 @@
 <body>
   <h2>🎵 オーディオをアップロードしてSDF生成</h2>
   <input type="file" id="audioFile" accept="audio/*" />
+  <label>バーの数: <input type="number" id="barCount" min="1" max="62" value="62" /></label>
   <canvas id="canvas"></canvas>
 
   <h3>📋 SDF出力（編集可能）</h3>
@@ -42,8 +43,12 @@
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth;
     canvas.height = 300;
-    const numBars = 190;
-    let audioContext, analyser, dataArray, collectedData = [];
+
+    const getLabel = () => {
+      return [..."0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"];
+    };
+
+    let audioContext, analyser, dataArray, collectedData = [], animationId, captureInterval;
 
     document.getElementById("audioFile").addEventListener("change", function () {
       const file = this.files[0];
@@ -51,7 +56,11 @@
       const reader = new FileReader();
       reader.onload = function (e) {
         const audio = new Audio(e.target.result);
-        audio.loop = true;
+        audio.addEventListener('ended', () => {
+          clearInterval(captureInterval);
+          cancelAnimationFrame(animationId);
+        });
+        audio.loop = false;
         audio.play();
         setupAudioContext(audio);
       };
@@ -59,64 +68,84 @@
     });
 
     function setupAudioContext(audio) {
+      const barCount = Math.min(62, parseInt(document.getElementById("barCount").value));
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       analyser = audioContext.createAnalyser();
       const source = audioContext.createMediaElementSource(audio);
       source.connect(analyser);
       analyser.connect(audioContext.destination);
-      analyser.fftSize = 256;
+      analyser.fftSize = 2048;
       dataArray = new Uint8Array(analyser.frequencyBinCount);
       collectedData = [];
 
-      setInterval(() => {
+      captureInterval = setInterval(() => {
         analyser.getByteFrequencyData(dataArray);
-        const frame = Array.from(dataArray.slice(0, 190)).map(x => String(x).padStart(3, "0"));
-        collectedData.push(frame);
-        updateSDFText();
+        const frame = Array.from(dataArray);
+        collectedData.push(extractBars(frame, barCount));
+        updateSDFText(barCount);
       }, 50);
 
-      drawBars();
+      drawBars(barCount);
     }
 
-    function drawBars() {
-      requestAnimationFrame(drawBars);
+    function extractBars(frame, barCount) {
+      const binPerBar = Math.floor(frame.length / barCount);
+      const bars = [];
+      for (let i = 0; i < barCount; i++) {
+        const segment = frame.slice(i * binPerBar, (i + 1) * binPerBar);
+        let avg = segment.reduce((sum, val) => sum + val, 0) / segment.length;
+
+        // 周りとのバランスを取る
+        const localMax = Math.max(...segment);
+        const localMin = Math.min(...segment);
+        avg = (avg + localMax * 0.2 + localMin * 0.1) / 1.3;
+
+        // ログスケーリング（200超えたら伸びにくく）
+        if (avg > 200) avg = 200 + Math.log(avg - 200 + 1) * 20;
+
+        bars.push(Math.round(avg).toString().padStart(3, '0'));
+      }
+      return bars;
+    }
+
+    function drawBars(barCount) {
+      animationId = requestAnimationFrame(() => drawBars(barCount));
       if (!analyser) return;
       analyser.getByteFrequencyData(dataArray);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const barWidth = canvas.width / numBars;
-      for (let i = 0; i < numBars; i++) {
-        const height = dataArray[i];
-        ctx.fillStyle = `hsl(${i * 360 / numBars}, 100%, 50%)`;
+      const barWidth = canvas.width / barCount;
+      for (let i = 0; i < barCount; i++) {
+        const segment = dataArray.slice(i * (dataArray.length / barCount), (i + 1) * (dataArray.length / barCount));
+        let height = segment.reduce((a, b) => a + b, 0) / segment.length;
+
+        if (height > 200) height = 200 + Math.log(height - 200 + 1) * 20;
+
+        ctx.fillStyle = `hsl(${i * 360 / barCount}, 100%, 50%)`;
         ctx.fillRect(i * barWidth, canvas.height - height, barWidth - 1, height);
       }
     }
 
-    function updateSDFText() {
-      const letters = "ABCDEFGHIJKLMNOPQRS".split("");
-      const lists = Array(19).fill().map(() => []);
+    function updateSDFText(barCount) {
+      const letters = getLabel().slice(0, barCount);
+      const lists = Array(barCount).fill().map(() => []);
       collectedData.forEach(frame => {
-        for (let i = 0; i < 19; i++) {
-          lists[i].push(frame[i * 10]);
+        for (let i = 0; i < barCount; i++) {
+          lists[i].push(frame[i]);
         }
       });
       const sdf = lists.map((list, i) => `[${letters[i]}]:${list.join(",")}`).join("/");
       document.getElementById("sdfTextArea").value = sdf;
     }
 
-    const listIdMap = {
-      A: "wrjicyhmuu[z,K{Ac*?7", B: "M~E+sSuFf0S^h!#u)uRO", C: ")J#bVgJXl+lus%%sY,N1",
-      D: "GgA5?^h0@^_@0_72Zvsx", E: "qZKwKaO2Feywh43^p}Ls", F: "1Cz-*ryy;gF^5]ZAanfS",
-      G: "?LQ0TxT|[cBZsm).|7qR", H: "+_.2N~a]F;E@D3Ri)*Hs", I: "zu!d#cLmu:p)rtvifjBA",
-      J: "ct*M#U-GfnqrR6i-mA]D", K: "/rJ=`R,!v!=GoUmHkS^l", L: "N-n]=sxgVM:M;zuCe:5b",
-      M: "Cq(Soa:;8`3N+F~ZCZ.d", N: "(1A6Qj7bJFq!tuAQ3Jqv", O: "Cb.YPA0Y/?q:@|W}^WT!",
-      P: "]eRbhH$O@:G8-DAhSx%X", Q: "IygaQ}!z3FI_NN%Xs,RX", R: ".MR#i{o(C8cW61jupx2,",
-      S: "DaQ(?yN~oH}].{;f(KTw"
-    };
+    const listIdMap = {};
+    getLabel().forEach((char, idx) => {
+      listIdMap[char] = `id_${idx.toString().padStart(2, '0')}`;
+    });
 
     function parseSDF(text) {
       const result = {};
       text.split("/").forEach(entry => {
-        const match = entry.match(/\[([A-S])\]:(.+)/);
+        const match = entry.match(/\[([0-9a-zA-Z])\]:(.+)/);
         if (match) {
           const key = match[1];
           const values = match[2].split(",").map(x => x.trim().padStart(3, "0"));
@@ -129,19 +158,17 @@
     document.getElementById("exportSpriteBtn").onclick = async () => {
       const sdfText = document.getElementById("sdfTextArea").value;
       const sdfData = parseSDF(sdfText);
-
       const response = await fetch("https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/pages/.sprite3/例.sprite3");
       const blob = await response.blob();
       const zip = await JSZip.loadAsync(blob);
       const spriteJson = JSON.parse(await zip.file("sprite.json").async("string"));
 
-      console.log("Before update:", JSON.parse(JSON.stringify(spriteJson.lists)));
-
       for (const key in sdfData) {
         const id = listIdMap[key];
-        const listName = `[${key}]`;
-        spriteJson.lists[id] = [listName, sdfData[key]];
-        console.log(`Updated ${key} (${id}) with ${sdfData[key].length} items`);
+        if (spriteJson.lists && id in spriteJson.lists) {
+          const listName = spriteJson.lists[id][0];
+          spriteJson.lists[id] = [listName, sdfData[key]];
+        }
       }
 
       zip.file("sprite.json", JSON.stringify(spriteJson, null, 2));
