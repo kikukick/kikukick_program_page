@@ -31,7 +31,6 @@
 <body>
   <h2>🎵 オーディオをアップロードしてSDF生成</h2>
   <input type="file" id="audioFile" accept="audio/*" />
-  <label>バーの数: <input type="number" id="barCount" min="1" max="62" value="62" /></label>
   <canvas id="canvas"></canvas>
 
   <h3>📋 SDF出力（編集可能）</h3>
@@ -43,12 +42,10 @@
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth;
     canvas.height = 300;
+    const numBars = 160;
+    let audioContext, analyser, dataArray, collectedData = [], intervalId;
 
-    const getLabel = () => {
-      return [..."0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"];
-    };
-
-    let audioContext, analyser, dataArray, collectedData = [], animationId, captureInterval;
+    const letters = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghij"]; // 40個
 
     document.getElementById("audioFile").addEventListener("change", function () {
       const file = this.files[0];
@@ -56,10 +53,6 @@
       const reader = new FileReader();
       reader.onload = function (e) {
         const audio = new Audio(e.target.result);
-        audio.addEventListener('ended', () => {
-          clearInterval(captureInterval);
-          cancelAnimationFrame(animationId);
-        });
         audio.loop = false;
         audio.play();
         setupAudioContext(audio);
@@ -68,84 +61,68 @@
     });
 
     function setupAudioContext(audio) {
-      const barCount = Math.min(62, parseInt(document.getElementById("barCount").value));
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       analyser = audioContext.createAnalyser();
       const source = audioContext.createMediaElementSource(audio);
       source.connect(analyser);
       analyser.connect(audioContext.destination);
-      analyser.fftSize = 2048;
+      analyser.fftSize = 256;
       dataArray = new Uint8Array(analyser.frequencyBinCount);
       collectedData = [];
 
-      captureInterval = setInterval(() => {
+      intervalId = setInterval(() => {
         analyser.getByteFrequencyData(dataArray);
-        const frame = Array.from(dataArray);
-        collectedData.push(extractBars(frame, barCount));
-        updateSDFText(barCount);
+        const frame = Array.from(dataArray.slice(0, numBars)).map(x => String(x).padStart(3, "0"));
+        collectedData.push(frame);
+        updateSDFText();
       }, 50);
 
-      drawBars(barCount);
+      audio.addEventListener("ended", () => {
+        clearInterval(intervalId);
+        console.log("音楽終了、データ収集停止");
+      });
+
+      drawBars();
     }
 
-    function extractBars(frame, barCount) {
-      const binPerBar = Math.floor(frame.length / barCount);
-      const bars = [];
-      for (let i = 0; i < barCount; i++) {
-        const segment = frame.slice(i * binPerBar, (i + 1) * binPerBar);
-        let avg = segment.reduce((sum, val) => sum + val, 0) / segment.length;
-
-        // 周りとのバランスを取る
-        const localMax = Math.max(...segment);
-        const localMin = Math.min(...segment);
-        avg = (avg + localMax * 0.2 + localMin * 0.1) / 1.3;
-
-        // ログスケーリング（200超えたら伸びにくく）
-        if (avg > 200) avg = 200 + Math.log(avg - 200 + 1) * 20;
-
-        bars.push(Math.round(avg).toString().padStart(3, '0'));
-      }
-      return bars;
-    }
-
-    function drawBars(barCount) {
-      animationId = requestAnimationFrame(() => drawBars(barCount));
+    function drawBars() {
+      requestAnimationFrame(drawBars);
       if (!analyser) return;
       analyser.getByteFrequencyData(dataArray);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const barWidth = canvas.width / barCount;
-      for (let i = 0; i < barCount; i++) {
-        const segment = dataArray.slice(i * (dataArray.length / barCount), (i + 1) * (dataArray.length / barCount));
-        let height = segment.reduce((a, b) => a + b, 0) / segment.length;
-
-        if (height > 200) height = 200 + Math.log(height - 200 + 1) * 20;
-
-        ctx.fillStyle = `hsl(${i * 360 / barCount}, 100%, 50%)`;
+      const barWidth = canvas.width / numBars;
+      for (let i = 0; i < numBars; i++) {
+        const height = dataArray[i];
+        ctx.fillStyle = `hsl(${i * 360 / numBars}, 100%, 50%)`;
         ctx.fillRect(i * barWidth, canvas.height - height, barWidth - 1, height);
       }
     }
 
-    function updateSDFText(barCount) {
-      const letters = getLabel().slice(0, barCount);
-      const lists = Array(barCount).fill().map(() => []);
+    function updateSDFText() {
+      const lists = Array(40).fill().map(() => []);
       collectedData.forEach(frame => {
-        for (let i = 0; i < barCount; i++) {
-          lists[i].push(frame[i]);
+        for (let i = 0; i < 40; i++) {
+          lists[i].push(frame[i * 4]); // 4飛ばしで40分割
         }
       });
       const sdf = lists.map((list, i) => `[${letters[i]}]:${list.join(",")}`).join("/");
       document.getElementById("sdfTextArea").value = sdf;
     }
 
-    const listIdMap = {};
-    getLabel().forEach((char, idx) => {
-      listIdMap[char] = `id_${idx.toString().padStart(2, '0')}`;
-    });
+    // 仮の40個のID（※実際の .sprite3 に合わせて必要に応じて変更）
+    const listIdMap = {
+      A: "id_A", B: "id_B", C: "id_C", D: "id_D", E: "id_E", F: "id_F", G: "id_G", H: "id_H",
+      I: "id_I", J: "id_J", K: "id_K", L: "id_L", M: "id_M", N: "id_N", O: "id_O", P: "id_P",
+      Q: "id_Q", R: "id_R", S: "id_S", T: "id_T", U: "id_U", V: "id_V", W: "id_W", X: "id_X",
+      Y: "id_Y", Z: "id_Z",
+      a: "id_a", b: "id_b", c: "id_c", d: "id_d", e: "id_e", f: "id_f", g: "id_g", h: "id_h",
+      i: "id_i", j: "id_j"
+    };
 
     function parseSDF(text) {
       const result = {};
       text.split("/").forEach(entry => {
-        const match = entry.match(/\[([0-9a-zA-Z])\]:(.+)/);
+        const match = entry.match(/\[([A-Za-j])\]:(.+)/);
         if (match) {
           const key = match[1];
           const values = match[2].split(",").map(x => x.trim().padStart(3, "0"));
