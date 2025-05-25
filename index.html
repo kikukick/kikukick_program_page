@@ -10,7 +10,8 @@
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: #111;
+            background: url('https://raw.githubusercontent.com/ユーザー名/リポジトリ名/ブランチ名/パス/背景画像.jpg') no-repeat center center fixed;
+            background-size: cover;
             overflow: hidden;
         }
         .carousel {
@@ -26,7 +27,7 @@
             position: absolute;
             width: 250px;
             height: 350px;
-            background: #222;
+            background-size: cover;
             border-radius: 15px;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
             display: flex;
@@ -66,11 +67,11 @@
 </head>
 <body>
     <div class="carousel">
-        <div class="card" data-link="pages/page2.html">千切り自動機</div>
-        <div class="card" data-link="pages/page3.html">白黒反転</div>
-        <div class="card" data-link="pages/page4.html">オーディオ</div>
-        <div class="card" data-link="pages/page5.html">SB3 Generato</div>
-        <div class="card" data-link="pages/page6.html">Page 5</div>
+        <div class="card" style="background-image: url('https://raw.githubusercontent.com/ユーザー名/リポジトリ名/ブランチ名/パス/画像1.jpg')" data-link="pages/page2.html">千切り自動機</div>
+        <div class="card" style="background-image: url('https://raw.githubusercontent.com/ユーザー名/リポジトリ名/ブランチ名/パス/画像2.jpg')" data-link="pages/page3.html">白黒反転</div>
+        <div class="card" style="background-image: url('https://raw.githubusercontent.com/ユーザー名/リポジトリ名/ブランチ名/パス/画像3.jpg')" data-link="pages/page4.html">オーディオ</div>
+        <div class="card" style="background-image: url('https://raw.githubusercontent.com/ユーザー名/リポジトリ名/ブランチ名/パス/画像4.jpg')" data-link="pages/page5.html">SB3 Generato</div>
+        <div class="card" style="background-image: url('https://raw.githubusercontent.com/ユーザー名/リポジトリ名/ブランチ名/パス/画像5.jpg')" data-link="pages/page6.html">Page 5</div>
         <div class="nav-buttons">
             <button id="prev">◀</button>
             <button id="next">▶</button>
