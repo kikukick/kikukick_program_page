@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>scratch　波形</title>
+  <title>scratch 波形 + 音声埋め込み</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     body {
@@ -46,6 +46,7 @@
     const numBars = 19;
     let audioContext, analyser, dataArray, collectedData = [];
     let animationId, intervalId;
+    let uploadedAudioBuffer = null; // 音声データ保存用
 
     document.getElementById("audioFile").addEventListener("change", function () {
       const file = this.files[0];
@@ -53,6 +54,7 @@
       const reader = new FileReader();
       reader.onload = function (e) {
         const audio = new Audio(e.target.result);
+        uploadedAudioBuffer = e.target.result;
         audio.addEventListener("ended", () => {
           clearInterval(intervalId);
           cancelAnimationFrame(animationId);
@@ -164,11 +166,47 @@
       const blob = await response.blob();
       const zip = await JSZip.loadAsync(blob);
       const spriteJson = JSON.parse(await zip.file("sprite.json").async("string"));
+      const soundJson = JSON.parse(await zip.file("sound.json").async("string"));
 
+      // SDFのリストデータをspriteに追加
       for (const key in sdfData) {
         const id = listIdMap[key];
         const listName = `[${key}]`;
         spriteJson.lists[id] = [listName, sdfData[key]];
+      }
+
+      // 音声ファイルがある場合は追加
+      if (uploadedAudioBuffer) {
+        const base64Data = uploadedAudioBuffer.split(",")[1];
+        const binary = atob(base64Data);
+        const array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
+
+        const soundId = "user-uploaded-sound";
+        const md5ext = `${soundId}.wav`;
+
+        // sound.jsonに登録
+        soundJson[soundId] = {
+          format: "adpcm",
+          rate: 48000,
+          sampleCount: 480000,
+          md5ext: md5ext,
+          name: "user_sound"
+        };
+
+        // sprite.jsonにも参照を追加
+        spriteJson.sounds.push({
+          soundName: "user_sound",
+          soundID: soundId,
+          format: "adpcm",
+          sampleCount: 480000,
+          rate: 48000,
+          md5ext: md5ext
+        });
+
+        // zipに追加
+        zip.file(`sounds/${md5ext}`, array);
+        zip.file("sound.json", JSON.stringify(soundJson, null, 2));
       }
 
       zip.file("sprite.json", JSON.stringify(spriteJson, null, 2));
@@ -176,7 +214,7 @@
 
       const a = document.createElement("a");
       a.href = URL.createObjectURL(newBlob);
-      a.download = "output_with_sdf.sprite3";
+      a.download = "output_with_sdf_and_audio.sprite3";
       a.click();
     };
   </script>
