@@ -7,10 +7,11 @@
     <style>
         body {
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background: url('https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/images/背景画像.jpg') no-repeat center center fixed;
+            background: url('https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/images/%E8%83%8C%E6%99%AF%E7%94%BB%E5%83%8F.jpg') no-repeat center center fixed;
             background-size: cover;
             overflow: hidden;
         }
@@ -18,29 +19,42 @@
             position: relative;
             width: 300px;
             height: 400px;
-            perspective: 1000px;
+            perspective: 1200px;
             display: flex;
             justify-content: center;
             align-items: center;
         }
         .card {
             position: absolute;
-            width: 250px;
-            height: 350px;
-            background-size: cover;
-            border-radius: 15px;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            font-size: 24px;
-            color: white;
+            background: transparent;
+            border-radius: 15px;
             transition: transform 0.5s, opacity 0.5s, box-shadow 0.5s;
             cursor: pointer;
+        }
+        .card img {
+            max-width: 250px;
+            max-height: 300px;
+            border-radius: 15px;
+            object-fit: contain;
+            transition: transform 0.5s;
+        }
+        .card .label {
+            margin-top: 10px;
+            color: white;
+            font-size: 20px;
+            text-shadow: 0 0 5px black;
         }
         .active {
             opacity: 1 !important;
             box-shadow: 0 0 30px 10px rgba(255, 255, 255, 0.6);
+            transform: scale(1.2) !important;
+            z-index: 10;
+        }
+        .active img {
+            transform: scale(2);
         }
         .inactive {
             opacity: 0.5;
@@ -63,34 +77,57 @@
             border-radius: 10px;
             box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
         }
+        .card-description {
+            margin-top: 20px;
+            font-size: 20px;
+            color: white;
+            text-shadow: 0 0 10px black;
+        }
     </style>
 </head>
 <body>
     <div class="carousel">
-        <div class="card" style="background-image: url('https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/images/千切り.png')" data-link="pages/page2.html">千切り自動機</div>
-        <div class="card" style="background-image: url('https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/images/反転.png')" data-link="pages/page3.html">白黒反転</div>
-        <div class="card" style="background-image: url('https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/images/audio.png')" data-link="pages/page4.html">オーディオ</div>
-        <div class="card" style="background-image: url('https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/images/List.png')" data-link="pages/page5.html">SB3 Generato</div>
-        <div class="card" style="background-image: url('https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/images/画像5.png')" data-link="pages/page6.html">Page 5</div>
+        <div class="card" data-link="pages/page2.html" data-description="野菜を自動で千切りします">
+            <img src="https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/images/千切り.png" alt="千切り">
+            <div class="label">千切り自動機</div>
+        </div>
+        <div class="card" data-link="pages/page3.html" data-description="画像を白黒反転します">
+            <img src="https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/images/反転.png" alt="反転">
+            <div class="label">白黒反転</div>
+        </div>
+        <div class="card" data-link="pages/page4.html" data-description="音声を再生できます">
+            <img src="https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/images/audio.png" alt="オーディオ">
+            <div class="label">オーディオ</div>
+        </div>
+        <div class="card" data-link="pages/page5.html" data-description="SB3ファイルを生成">
+            <img src="https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/images/List.png" alt="SB3">
+            <div class="label">SB3 Generator</div>
+        </div>
+        <div class="card" data-link="pages/page6.html" data-description="その他の機能">
+            <img src="https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/images/画像5.png" alt="その他">
+            <div class="label">Page 5</div>
+        </div>
         <div class="nav-buttons">
             <button id="prev">◀</button>
             <button id="next">▶</button>
         </div>
     </div>
-    
+    <div class="card-description" id="description"></div>
+
     <script>
         const cards = document.querySelectorAll(".card");
+        const description = document.getElementById("description");
         let currentIndex = 0;
 
         function updateCards() {
             const angleStep = 360 / cards.length;
             cards.forEach((card, index) => {
                 const angle = angleStep * index - (angleStep * currentIndex);
-                const translateZ = 300;
-                card.style.transform = `rotateY(${angle}deg) translateZ(${translateZ}px)`;
+                card.style.transform = `rotateY(${angle}deg) translateZ(500px)`;
                 if (index === currentIndex) {
                     card.classList.add("active");
                     card.classList.remove("inactive");
+                    description.textContent = card.getAttribute("data-description") || "";
                 } else {
                     card.classList.remove("active");
                     card.classList.add("inactive");
