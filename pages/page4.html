@@ -6,12 +6,6 @@
   <title>scratch 波形</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
-    /* ──────────────────────────────────────────
-       修正ポイント：
-       ・body に固定高さ(height:100vh)を指定せず、overflow: hidden を削除
-       ・必要に応じて overflow: auto にする
-       ・その結果、画面をスクロールできるようになる
-    ────────────────────────────────────────── */
     body {
       background: #121212;
       color: #fff;
@@ -21,12 +15,6 @@
       align-items: center;
       margin: 0;
       padding: 0;
-      /* ↓ 削除しました
-      height: 100vh;
-      overflow: hidden;
-      */
-      /* もしスクロールバーを自動表示したい場合は以下を追加してください（不要なら省略可） */
-      /* overflow-y: auto; */
     }
     h2 {
       margin-top: 20px;
@@ -109,12 +97,8 @@
 <body>
   <h2>オーディオ/ビデオをアップロードしてSDF生成</h2>
   <h3>⚠️曲の再生中に他のタブに移動しないでください。</h3>
-
-  <!-- ドラッグ＆ドロップエリア -->
   <div id="dropZone">ここに音声ファイルまたは動画ファイルをドラッグ＆ドロップ</div>
   <input type="file" id="audioFile" accept="audio/*,video/mp4" />
-
-  <!-- キャンバス -->
   <canvas id="canvas"></canvas>
 
   <h3>SDF出力（編集可能）</h3>
@@ -122,7 +106,6 @@
   <button id="exportSpriteBtn">sprite3を生成してDL</button>
 
   <script>
-    // グローバル変数
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     let audioContext = null;
@@ -133,8 +116,6 @@
     let animationId = null;
     let intervalId = null;
     let currentAudio = null;
-
-    // キャンバスサイズをウィンドウ幅に合わせる
     function resizeCanvas() {
       canvas.width = window.innerWidth * 0.9;
       if (canvas.width > 1200) canvas.width = 1200;
@@ -142,8 +123,6 @@
     }
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
-
-    // ドラッグ＆ドロップのセットアップ
     const dropZone = document.getElementById("dropZone");
     dropZone.addEventListener("dragover", (e) => {
       e.preventDefault();
@@ -164,24 +143,18 @@
     dropZone.addEventListener("click", () => {
       document.getElementById("audioFile").click();
     });
-
-    // ファイル入力の変更イベント
     document.getElementById("audioFile").addEventListener("change", function () {
       const file = this.files[0];
       if (!file) return;
       handleFile(file);
     });
-
-    // ファイルを処理して再生＆解析開始
     function handleFile(file) {
-      // iOS Safari対策: AudioContext をユーザー操作の直後に作成して resume する
       if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
       }
       audioContext.resume().then(() => {
         const reader = new FileReader();
         reader.onload = function (e) {
-          // 既存のAudio要素があれば停止して解放
           if (currentAudio) {
             currentAudio.pause();
             currentAudio.src = "";
@@ -189,22 +162,17 @@
             if (intervalId) clearInterval(intervalId);
             if (animationId) cancelAnimationFrame(animationId);
           }
-          // Audio要素を生成
           const audio = new Audio(e.target.result);
           audio.setAttribute("playsinline", "true");
           audio.controls = true;
           audio.style.display = "none";
           document.body.appendChild(audio);
           currentAudio = audio;
-
-          // 再生が終わったら解析を停止
           audio.addEventListener("ended", () => {
             if (intervalId) clearInterval(intervalId);
             if (animationId) cancelAnimationFrame(animationId);
             console.log("Audio ended, SDF collection stopped.");
           });
-
-          // メディア要素ソースを作成して解析ノードに接続
           const source = audioContext.createMediaElementSource(audio);
           if (analyser) {
             analyser.disconnect();
@@ -214,11 +182,7 @@
           dataArray = new Uint8Array(analyser.frequencyBinCount);
           source.connect(analyser);
           analyser.connect(audioContext.destination);
-
-          // SDF用データを初期化
           collectedData = [];
-
-          // 50msごとに周波数データを取得してSDFテキストを更新
           intervalId = setInterval(() => {
             analyser.getByteFrequencyData(dataArray);
             const indices = Array.from({ length: numBars }, (_, i) =>
@@ -228,11 +192,7 @@
             collectedData.push(frame);
             updateSDFText();
           }, 50);
-
-          // 描画ループ開始
           drawBars();
-
-          // 再生開始
           const playPromise = audio.play();
           if (playPromise !== undefined) {
             playPromise.catch(error => {
@@ -243,8 +203,6 @@
         reader.readAsDataURL(file);
       });
     }
-
-    // バーを円形に描画する関数
     function drawBars() {
       animationId = requestAnimationFrame(drawBars);
       if (!analyser) return;
@@ -278,8 +236,6 @@
         ctx.stroke();
       }
     }
-
-    // SDFテキストエリアを更新する関数
     function updateSDFText() {
       const letters = "ABCDEFGHIJKLMNOPQRS".split("");
       const lists = Array(numBars).fill().map(() => []);
@@ -291,8 +247,6 @@
       const sdf = lists.map((list, i) => `[${letters[i]}]:${list.join(",")}`).join("/");
       document.getElementById("sdfTextArea").value = sdf;
     }
-
-    // sprite3生成のためのリストIDマップ
     const listIdMap = {
       A: "wrjicyhmuu[z,K{Ac*?7", B: "M~E+sSuFf0S^h!#u)uRO", C: ")J#bVgJXl+lus%%sY,N1",
       D: "GgA5?^h0@^_@0_72Zvsx", E: "qZKwKaO2Feywh43^p}Ls", F: "1Cz-*ryy;gF^5]ZAanfS",
@@ -302,8 +256,6 @@
       P: "]eRbhH$O@:G8-DAhSx%X", Q: "IygaQ}!z3FI_NN%Xs,RX", R: ".MR#i{o(C8cW61jupx2,",
       S: "DaQ(?yN~oH}].{;f(KTw"
     };
-
-    // SDFテキストをパースしてオブジェクト化する関数
     function parseSDF(text) {
       const result = {};
       text.split("/").forEach(entry => {
@@ -316,8 +268,6 @@
       });
       return result;
     }
-
-    // sprite3ファイルを生成してダウンロードするボタンイベント
     document.getElementById("exportSpriteBtn").onclick = async () => {
       const sdfText = document.getElementById("sdfTextArea").value;
       const sdfData = parseSDF(sdfText);
