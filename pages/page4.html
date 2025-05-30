@@ -88,10 +88,12 @@
     }
     button:active {
       transform: translateY(0);
-    }
-    input[type="file"] {
-      display: none;
-    }
+input[type="file"] {
+  opacity: 0;
+  position: absolute;
+  z-index: -1;
+　}
+
     /* メディア要素（audio/video）をユーザーに見せるためのスタイル */
     #mediaContainer {
       margin-top: 20px;
