@@ -6,6 +6,12 @@
   <title>scratch 波形</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
+    /* ──────────────────────────────────────────
+       修正ポイント：
+       ・body に固定高さ(height:100vh)を指定せず、overflow: hidden を削除
+       ・必要に応じて overflow: auto にする
+       ・その結果、画面をスクロールできるようになる
+    ────────────────────────────────────────── */
     body {
       background: #121212;
       color: #fff;
@@ -15,8 +21,12 @@
       align-items: center;
       margin: 0;
       padding: 0;
+      /* ↓ 削除しました
       height: 100vh;
       overflow: hidden;
+      */
+      /* もしスクロールバーを自動表示したい場合は以下を追加してください（不要なら省略可） */
+      /* overflow-y: auto; */
     }
     h2 {
       margin-top: 20px;
@@ -181,9 +191,9 @@
           }
           // Audio要素を生成
           const audio = new Audio(e.target.result);
-          audio.setAttribute("playsinline", "true"); // iOSでインライン再生を有効にする
-          audio.controls = true; // 再生コントロールを表示することで、iOSでも動きやすくする
-          audio.style.display = "none"; // 表示は不要だが、DOMに追加しておく
+          audio.setAttribute("playsinline", "true");
+          audio.controls = true;
+          audio.style.display = "none";
           document.body.appendChild(audio);
           currentAudio = audio;
 
