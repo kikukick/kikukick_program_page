@@ -92,19 +92,32 @@
     input[type="file"] {
       display: none;
     }
+    /* メディア要素（audio/video）をユーザーに見せるためのスタイル */
+    #mediaContainer {
+      margin-top: 20px;
+      width: 90%;
+      max-width: 800px;
+      display: flex;
+      justify-content: center;
+    }
+    #mediaContainer video,
+    #mediaContainer audio {
+      max-width: 100%;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    }
   </style>
 </head>
 <body>
   <h2>オーディオ/ビデオをアップロードしてSDF生成</h2>
   <h3>⚠️曲の再生中に他のタブに移動しないでください。</h3>
   <div id="dropZone">ここに音声ファイルまたは動画ファイルをドラッグ＆ドロップ</div>
-  <input type="file" id="audioFile" accept="audio/*,video/mp4" />
+  <input type="file" id="audioFile" accept="audio/*,video/*" />
+  <div id="mediaContainer"></div>
   <canvas id="canvas"></canvas>
-
   <h3>SDF出力（編集可能）</h3>
   <textarea id="sdfTextArea" placeholder="[A]:000,001,002/...;"></textarea><br>
   <button id="exportSpriteBtn">sprite3を生成してDL</button>
-
   <script>
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
@@ -115,7 +128,9 @@
     let collectedData = [];
     let animationId = null;
     let intervalId = null;
-    let currentAudio = null;
+    let currentMediaElement = null; 
+    let sourceNode = null;
+
     function resizeCanvas() {
       canvas.width = window.innerWidth * 0.9;
       if (canvas.width > 1200) canvas.width = 1200;
@@ -123,6 +138,7 @@
     }
     window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
+
     const dropZone = document.getElementById("dropZone");
     dropZone.addEventListener("dragover", (e) => {
       e.preventDefault();
@@ -152,37 +168,50 @@
       if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
       }
-      audioContext.resume().then(() => {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          if (currentAudio) {
-            currentAudio.pause();
-            currentAudio.src = "";
-            currentAudio.load();
-            if (intervalId) clearInterval(intervalId);
-            if (animationId) cancelAnimationFrame(animationId);
-          }
-          const audio = new Audio(e.target.result);
-          audio.setAttribute("playsinline", "true");
-          audio.controls = true;
-          audio.style.display = "none";
-          document.body.appendChild(audio);
-          currentAudio = audio;
-          audio.addEventListener("ended", () => {
-            if (intervalId) clearInterval(intervalId);
-            if (animationId) cancelAnimationFrame(animationId);
-            console.log("Audio ended, SDF collection stopped.");
-          });
-          const source = audioContext.createMediaElementSource(audio);
-          if (analyser) {
-            analyser.disconnect();
-          }
+      if (currentMediaElement) {
+        currentMediaElement.pause();
+        currentMediaElement.remove();  
+        currentMediaElement = null;
+      }
+      if (analyser) {
+        analyser.disconnect();
+        analyser = null;
+      }
+      if (sourceNode) {
+        sourceNode.disconnect();
+        sourceNode = null;
+      }
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+      collectedData = [];
+      const objectUrl = URL.createObjectURL(file);
+      const mediaContainer = document.getElementById("mediaContainer");
+      if (file.type.startsWith("video/")) {
+        const video = document.createElement("video");
+        video.src = objectUrl;
+        video.controls = true;
+        video.autoplay = true;
+        video.playsInline = true;  
+        mediaContainer.appendChild(video);
+        currentMediaElement = video;
+        video.addEventListener("ended", () => {
+          if (intervalId) clearInterval(intervalId);
+          if (animationId) cancelAnimationFrame(animationId);
+          console.log("Video ended, SDF collection stopped.");
+        });
+        audioContext.resume().then(() => {
+          sourceNode = audioContext.createMediaElementSource(video);
           analyser = audioContext.createAnalyser();
           analyser.fftSize = 256;
           dataArray = new Uint8Array(analyser.frequencyBinCount);
-          source.connect(analyser);
+          sourceNode.connect(analyser);
           analyser.connect(audioContext.destination);
-          collectedData = [];
           intervalId = setInterval(() => {
             analyser.getByteFrequencyData(dataArray);
             const indices = Array.from({ length: numBars }, (_, i) =>
@@ -193,15 +222,45 @@
             updateSDFText();
           }, 50);
           drawBars();
-          const playPromise = audio.play();
-          if (playPromise !== undefined) {
-            playPromise.catch(error => {
-              console.warn("Audio playback failed:", error);
-            });
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+        });
+      } else if (file.type.startsWith("audio/")) {
+        const audio = document.createElement("audio");
+        audio.src = objectUrl;
+        audio.controls = true;
+        audio.autoplay = true;
+        audio.playsInline = true;
+        mediaContainer.appendChild(audio);
+        currentMediaElement = audio;
+        audio.addEventListener("ended", () => {
+          if (intervalId) clearInterval(intervalId);
+          if (animationId) cancelAnimationFrame(animationId);
+          console.log("Audio ended, SDF collection stopped.");
+        });
+        audioContext.resume().then(() => {
+          sourceNode = audioContext.createMediaElementSource(audio);
+          analyser = audioContext.createAnalyser();
+          analyser.fftSize = 256;
+          dataArray = new Uint8Array(analyser.frequencyBinCount);
+          sourceNode.connect(analyser);
+          analyser.connect(audioContext.destination);
+
+          intervalId = setInterval(() => {
+            analyser.getByteFrequencyData(dataArray);
+            const indices = Array.from({ length: numBars }, (_, i) =>
+              Math.floor((i / numBars) * dataArray.length)
+            );
+            const frame = indices.map(i => String(dataArray[i]).padStart(3, "0"));
+            collectedData.push(frame);
+            updateSDFText();
+          }, 50);
+
+          drawBars();
+        });
+      } else {
+        alert("サポートされていないファイル形式です。\n音声（audio/*）または動画（video/*）を選択してください。");
+        URL.revokeObjectURL(objectUrl);
+        return;
+      }
     }
     function drawBars() {
       animationId = requestAnimationFrame(drawBars);
@@ -268,6 +327,7 @@
       });
       return result;
     }
+
     document.getElementById("exportSpriteBtn").onclick = async () => {
       const sdfText = document.getElementById("sdfTextArea").value;
       const sdfData = parseSDF(sdfText);
