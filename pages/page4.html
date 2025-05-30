@@ -73,7 +73,8 @@
 <body>
   <h2>オーディオをアップロードしてSDF生成</h2>
   <h3>⚠️曲の再生中に他のタブに移動しないでください。</h3>
-  <input type="file" id="audioFile">
+
+  <div id="fileInputContainer"></div>
 
   <canvas id="canvas"></canvas>
 
@@ -82,6 +83,16 @@
   <button id="exportSpriteBtn">sprite3を生成してDL</button>
 
   <script>
+    // ユーザーエージェントに応じてacceptを設定する
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.id = "audioFile";
+    if (!isIOS) {
+      fileInput.accept = "audio/*";
+    }
+    document.getElementById("fileInputContainer").appendChild(fileInput);
+
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth;
@@ -91,7 +102,7 @@
     let audioContext, analyser, dataArray, collectedData = [];
     let animationId, intervalId;
 
-    document.getElementById("audioFile").addEventListener("change", function () {
+    fileInput.addEventListener("change", function () {
       const file = this.files[0];
       if (!file) return;
       const reader = new FileReader();
