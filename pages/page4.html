@@ -5,6 +5,7 @@
   <title>scratch 波形</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
+    /* 同じスタイル */
     body {
       background: #121212;
       color: #fff;
@@ -15,9 +16,8 @@
       margin: 0;
       padding: 0;
     }
-    h2 {
+    h2, h3 {
       margin-top: 20px;
-      font-size: 2rem;
     }
     canvas {
       background: #1a1a1a;
@@ -36,7 +36,6 @@
       font-size: 1rem;
       background: #333;
       color: #fff;
-      box-shadow: 0 0 8px rgba(255, 255, 255, 0.1);
       resize: none;
     }
     textarea:focus {
@@ -54,44 +53,27 @@
       margin-top: 20px;
       cursor: pointer;
       transition: all 0.3s ease-in-out;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
     }
     button:hover {
       background-color: #3700b3;
-      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
       transform: translateY(-2px);
-    }
-    button:active {
-      transform: translateY(0);
     }
     input[type="file"] {
       margin-top: 20px;
-      font-size: 1rem;
     }
   </style>
 </head>
 <body>
   <h2>オーディオをアップロードしてSDF生成</h2>
   <h3>⚠️曲の再生中に他のタブに移動しないでください。</h3>
-
-  <div id="fileInputContainer"></div>
-
+  <input type="file" id="audioFile">
+  <button id="playBtn">再生＆解析開始</button>
   <canvas id="canvas"></canvas>
-
   <h3>SDF出力（編集可能）</h3>
   <textarea id="sdfTextArea" placeholder="[A]:000,001,002/...;"></textarea><br>
   <button id="exportSpriteBtn">sprite3を生成してDL</button>
 
   <script>
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const fileInput = document.createElement("input");
-    fileInput.type = "file";
-    fileInput.id = "audioFile";
-    if (!isIOS) {
-      fileInput.accept = "audio/*";
-    }
-    document.getElementById("fileInputContainer").appendChild(fileInput);
-
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth;
@@ -99,35 +81,47 @@
 
     const numBars = 19;
     let audioContext, analyser, dataArray, collectedData = [];
-    let animationId, intervalId;
+    let intervalId, animationId;
+    let audioBuffer = null;
 
-    fileInput.addEventListener("change", function () {
-      const file = this.files[0];
+    const fileInput = document.getElementById("audioFile");
+    const playBtn = document.getElementById("playBtn");
+
+    fileInput.addEventListener("change", async function () {
+      const file = fileInput.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const audio = new Audio(e.target.result);
-        audio.addEventListener("ended", () => {
-          clearInterval(intervalId);
-          cancelAnimationFrame(animationId);
-          console.log("Audio ended, SDF collection stopped.");
-        });
-        audio.loop = false;
-        audio.play();
-        setupAudioContext(audio);
-      };
-      reader.readAsDataURL(file);
+
+      const arrayBuffer = await file.arrayBuffer();
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
     });
 
-    function setupAudioContext(audio) {
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    playBtn.addEventListener("click", async function () {
+      if (!audioBuffer || !audioContext) {
+        alert("音声ファイルを選択してください");
+        return;
+      }
+
+      await audioContext.resume();
+
+      const source = audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+
       analyser = audioContext.createAnalyser();
-      const source = audioContext.createMediaElementSource(audio);
-      source.connect(analyser);
-      analyser.connect(audioContext.destination);
       analyser.fftSize = 256;
       dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      source.connect(analyser);
+      analyser.connect(audioContext.destination);
       collectedData = [];
+
+      source.start();
+
+      source.onended = () => {
+        clearInterval(intervalId);
+        cancelAnimationFrame(animationId);
+        console.log("Audio ended");
+      };
 
       intervalId = setInterval(() => {
         analyser.getByteFrequencyData(dataArray);
@@ -140,7 +134,7 @@
       }, 50);
 
       drawBars();
-    }
+    });
 
     function drawBars() {
       animationId = requestAnimationFrame(drawBars);
@@ -167,7 +161,7 @@
         const x = Math.cos(angle);
         const y = Math.sin(angle);
 
-        ctx.lineWidth = 4; 
+        ctx.lineWidth = 4;
         ctx.strokeStyle = `hsl(${i * 360 / numBars}, 100%, 50%)`;
         ctx.beginPath();
         ctx.moveTo(centerX + x * radius, centerY + y * radius);
