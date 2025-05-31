@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", function () {
     userIcon.addEventListener("click", function () {
       if (confirm("移動しますか？")) {
         window.location.href = "https://scratch.mit.edu/users/kikukick/";
+        
       }
     });
   }
