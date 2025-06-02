@@ -1,11 +1,31 @@
 {
   "hosting": {
-    "public": "public",     
+    "public": "dist",          
     "ignore": ["**/.*", "node_modules/**"], 
-    "rewrites": [            
+    "rewrites": [
       {
         "source": "**",
         "destination": "/index.html"
+      }
+    ],
+    "cleanUrls": true,          
+    "trailingSlash": false,     
+    "headers": [
+      {
+        "source": "/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=3600"
+          }
+        ]
+      }
+    ],
+    "redirects": [
+      {
+        "source": "/old-page",
+        "destination": "/new-page",
+        "type": 301
       }
     ]
   }
