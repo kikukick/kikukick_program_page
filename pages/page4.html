@@ -89,7 +89,6 @@
   </style>
 </head>
 <body>
-  <h1>申し訳ございません、一時メンテナンス中です！！</h1>
   <h2>オーディオをアップロードしてSDF生成</h2>
   <h3>⚠️曲の再生中に他のタブに移動しないでください。</h3>
   
@@ -268,10 +267,14 @@
           listIdMap[m[1]] = id;
         }
       }
+      console.log("★ listIdMap:", listIdMap);
       for (const key in sdfData) {
         const id = listIdMap[key];
         if (id) {
+          console.log(`--> Overwriting list [${key}] → id "${id}" (${sdfData[key].length} frames)`);
           spriteJson.lists[id] = [`[${key}]`, sdfData[key]];
+        } else {
+          console.warn(`!! No mapping found for key [${key}]`);
         }
       }
       zip.file("sprite.json", JSON.stringify(spriteJson, null, 2));
