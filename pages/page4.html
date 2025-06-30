@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>scratch 波形 (拡張版)</title>
+  <title>scratch 波形 (拡張版) ver2.0.2</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="stylesheet" href="https://kikukick.github.io/kikukick_program_page/pages/my_account/account.css">
   <style>
@@ -24,23 +24,6 @@
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
       margin-top: 20px;
-    }
-    textarea {
-      width: 90%;
-      height: 120px;
-      margin-top: 20px;
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-      font-family: monospace;
-      font-size: 1rem;
-      background: #333;
-      color: #fff;
-      resize: none;
-    }
-    textarea:focus {
-      outline: none;
-      border: 1px solid #ff4081;
     }
     button {
       background-color: #6200ea;
@@ -78,27 +61,23 @@
   </style>
 </head>
 <body>
-  <h1>プログラム編集中。只今使用できません。</h1>
-  
   <h2>オーディオをアップロードしてSDF生成 (拡張版)</h2>
   <h3>⚠️曲の再生中に他のタブに移動しないでください。</h3>
-  <!-- 使用方法の表示 -->
   <div class="instructions">
     <h3>使用方法</h3>
     <p>① 任意の音楽をアップロードします。</p>
     <p>② 生成するデータ本数を1〜60の範囲で入力します。</p>
     <p>③ 他のサイトなどに行かず、音楽が終わるのを待ってください（重要）。</p>
     <p>④ 再生が終わった後、画面下の「sprite3を生成してDL」ボタンを押してください。</p>
-    <p>⑤ ダウンロードされる .sprite3 ファイルをScratchで開くと、リスト[1]〜[N]に波形データが格納されています。</p>
+    <p>⑤ ダウンロードされた .sprite3 ファイルをScratchで開くと、リスト[1]〜[N]に波形データが格納されています。</p>
   </div>
   <div id="userIcon"></div>
   <input type="file" id="audioFile" accept="audio/*">
   <input type="number" id="barCount" min="1" max="60" value="19" title="生成するデータ数 (1-60)">
   <button id="playBtn">再生＆解析開始</button>
   <canvas id="canvas"></canvas>
-  <h3>SDF出力（編集可能）</h3>
-  <textarea id="sdfTextArea" placeholder="1:000,001,.../2:...;"></textarea><br>
   <button id="exportSpriteBtn">sprite3を生成してDL</button>
+  <h5>ver2.0.2</h5>
 
   <script>
     const canvas = document.getElementById("canvas");
@@ -112,10 +91,8 @@
     let numBars = 19;
     const maxBars = 60;
     const listKeys = Array.from({ length: maxBars }, (_, i) => String(i + 1));
-
-    // sprite3内のリストIDマップ (1〜60)
     const listIdMap = {
-      "1": "wrjicyhmuu[z,K{Ac*?7",    "2": "M~E+sSuFf0S^h!#u)uRO",
+            "1": "wrjicyhmuu[z,K{Ac*?7",    "2": "M~E+sSuFf0S^h!#u)uRO",
       "3": ")J#bVgJXl+lus%%sY,N1",    "4": "GgA5?^h0@^_@0_72Zvsx",
       "5": "qZKwKaO2Feywh43^p}Ls",    "6": "1Cz-*ryy;gF^5]ZAanfS",
       "7": "?LQ0TxT|[cBZsm).|7qR",    "8": "+_.2N~a]F;E@D3Ri)*Hs",
@@ -147,23 +124,19 @@
       "59": "ad8gH5(q`QS0:KbsDm~W",     "60": "Zc]DarN[{w?Lz4Hg]/RL"
     };
 
-    const fileInput = document.getElementById("audioFile");
-    const playBtn = document.getElementById("playBtn");
-
-    fileInput.addEventListener("change", async function () {
-      const file = fileInput.files[0];
+    document.getElementById("audioFile").addEventListener("change", async function () {
+      const file = this.files[0];
       if (!file) return;
       const arrayBuffer = await file.arrayBuffer();
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
     });
 
-    playBtn.addEventListener("click", async function () {
+    document.getElementById("playBtn").addEventListener("click", async function () {
       if (!audioBuffer || !audioContext) {
         alert("音声ファイルを選択してください。再度お試しください");
         return;
       }
-      // 本数取得
       const count = parseInt(document.getElementById("barCount").value);
       numBars = Math.min(Math.max(count, 1), maxBars);
       await audioContext.resume();
@@ -179,7 +152,6 @@
       source.onended = () => {
         clearInterval(intervalId);
         cancelAnimationFrame(animationId);
-        console.log("Audio ended");
       };
       intervalId = setInterval(() => {
         analyser.getByteFrequencyData(dataArray);
@@ -188,7 +160,6 @@
         );
         const frame = indices.map(i => String(dataArray[i]).padStart(3, "0"));
         collectedData.push(frame);
-        updateSDFText();
       }, 50);
       drawBars();
     });
@@ -222,39 +193,21 @@
       }
     }
 
-    function updateSDFText() {
+    document.getElementById("exportSpriteBtn").onclick = async () => {
+      const response = await fetch("https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/pages/.sprite3/template.sprite3");
+      const blob = await response.blob();
+      const zip = await JSZip.loadAsync(blob);
+      const spriteJson = JSON.parse(await zip.file("sprite.json").async("string"));
       const lists = Array(numBars).fill().map(() => []);
       collectedData.forEach(frame => {
         for (let i = 0; i < numBars; i++) {
           lists[i].push(frame[i]);
         }
       });
-      const sdf = lists.map((list, i) => `${listKeys[i]}:${list.join(",")}`).join("/");
-      document.getElementById("sdfTextArea").value = sdf;
-    }
-
-    function parseSDF(text) {
-      const result = {};
-      text.split("/").forEach(entry => {
-        const [key, rest] = entry.split(":");
-        if (listKeys.includes(key)) {
-          result[key] = rest.split(",").map(x => x.trim().padStart(3, "0"));
-        }
-      });
-      return result;
-    }
-
-    document.getElementById("exportSpriteBtn").onclick = async () => {
-      const sdfText = document.getElementById("sdfTextArea").value;
-      const sdfData = parseSDF(sdfText);
-      const response = await fetch("https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/pages/.sprite3/てんp.sprite3");
-      const blob = await response.blob();
-      const zip = await JSZip.loadAsync(blob);
-      const spriteJson = JSON.parse(await zip.file("sprite.json").async("string"));
-      // 上書き
-      Object.keys(sdfData).forEach(key => {
+      lists.forEach((list, i) => {
+        const key = listKeys[i];
         const id = listIdMap[key];
-        spriteJson.lists[id] = [key, sdfData[key]];
+        spriteJson.lists[id] = [key, list];
       });
       zip.file("sprite.json", JSON.stringify(spriteJson, null, 2));
       const newBlob = await zip.generateAsync({ type: "blob" });
