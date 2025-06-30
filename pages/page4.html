@@ -6,83 +6,20 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="stylesheet" href="https://kikukick.github.io/kikukick_program_page/pages/my_account/account.css">
   <style>
-    body {
-      background: #121212;
-      color: #fff;
-      font-family: 'Arial', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin: 0;
-      padding: 0;
-    }
-    h2, h3 {
-      margin-top: 20px;
-    }
-    canvas {
-      background: #1a1a1a;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-      margin-top: 20px;
-    }
-    textarea {
-      width: 90%;
-      height: 120px;
-      margin-top: 20px;
-      padding: 10px;
-      border: none;
-      border-radius: 8px;
-      font-family: monospace;
-      font-size: 1rem;
-      background: #333;
-      color: #fff;
-      resize: none;
-    }
-    textarea:focus {
-      outline: none;
-      border: 1px solid #ff4081;
-    }
-    button {
-      background-color: #6200ea;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      font-size: 1rem;
-      font-weight: bold;
-      border-radius: 30px;
-      margin-top: 20px;
-      cursor: pointer;
-      transition: all 0.3s ease-in-out;
-    }
-    button:hover {
-      background-color: #3700b3;
-      transform: translateY(-2px);
-    }
-    input[type="file"],
-    input[type="number"] {
-      margin-top: 20px;
-    }
-    .instructions {
-      background: #333;
-      padding: 20px;
-      border-radius: 8px;
-      margin-top: 30px;
-      width: 80%;
-      max-width: 800px;
-    }
-    .controls {
-      display: flex;
-      align-items: center;
-      gap: 1em;
-      margin-top: 20px;
-    }
-    .controls label {
-      font-weight: bold;
-    }
+    body { background:#121212; color:#fff; font-family:'Arial',sans-serif; display:flex; flex-direction:column; align-items:center; margin:0; padding:0; }
+    h2,h3 { margin-top:20px; }
+    canvas { background:#1a1a1a; border-radius:10px; box-shadow:0 0 10px rgba(255,255,255,0.2); margin-top:20px; }
+    textarea { width:90%; height:120px; margin-top:20px; padding:10px; border:none; border-radius:8px; font-family:monospace; font-size:1rem; background:#333; color:#fff; resize:none; }
+    textarea:focus { outline:none; border:1px solid #ff4081; }
+    button { background-color:#6200ea; color:white; border:none; padding:12px 24px; font-size:1rem; font-weight:bold; border-radius:30px; margin-top:20px; cursor:pointer; transition:all .3s ease-in-out; }
+    button:hover { background-color:#3700b3; transform:translateY(-2px); }
+    input[type=file],input[type=number] { margin-top:20px; }
+    .instructions { background:#333; padding:20px; border-radius:8px; margin-top:30px; width:80%; max-width:800px; }
+    .controls { display:flex; align-items:center; gap:1em; margin-top:20px; }
+    .controls label { font-weight:bold; }
   </style>
 </head>
 <body>
-  <h1>メンテ中のため一時的に使えません。申し訳ございません。2025/7/2~3には更新される予定です</h1>
   <h2>オーディオをアップロードしてSDF生成</h2>
   <h3>⚠️曲の再生中に他のタブに移動しないでください。</h3>
   <div class="instructions">
@@ -94,10 +31,7 @@
   </div>
   <div class="controls">
     <input type="file" id="audioFile">
-    <label>
-      本数:
-      <input type="number" id="barCount" min="1" max="60" value="19" />
-    </label>
+    <label>本数:<input type="number" id="barCount" min="1" max="60" value="19"></label>
     <button id="playBtn">再生＆解析開始</button>
   </div>
   <canvas id="canvas"></canvas>
@@ -107,132 +41,102 @@
   <script>
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = 400;
-
+    canvas.width = window.innerWidth; canvas.height = 400;
     const barCountInput = document.getElementById("barCount");
-    let numBars = parseInt(barCountInput.value, 10);
-    barCountInput.addEventListener("change", () => {
-      let v = parseInt(barCountInput.value, 10);
-      if (isNaN(v) || v < 1) v = 1;
-      if (v > 60) v = 60;
-      barCountInput.value = v;
-      numBars = v;
+    let numBars = parseInt(barCountInput.value,10);
+    barCountInput.addEventListener("change",()=>{
+      let v = parseInt(barCountInput.value,10);
+      if(isNaN(v)||v<1)v=1; if(v>60)v=60;
+      barCountInput.value=v; numBars=v;
     });
-
-    let audioContext, analyser, dataArray, collectedData = [];
-    let intervalId, animationId, audioBuffer = null;
-
-    document.getElementById("audioFile").addEventListener("change", async e => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const buf = await file.arrayBuffer();
-      audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      audioBuffer = await audioContext.decodeAudioData(buf);
+    let audioContext,analyser,dataArray,collectedData=[],intervalId,animationId,audioBuffer=null;
+    document.getElementById("audioFile").addEventListener("change",async e=>{
+      const file=e.target.files[0];
+      if(!file)return;
+      const buf=await file.arrayBuffer();
+      audioContext=new(window.AudioContext||window.webkitAudioContext)();
+      audioBuffer=await audioContext.decodeAudioData(buf);
     });
-
-    document.getElementById("playBtn").addEventListener("click", async () => {
-      if (!audioBuffer) { alert("音声ファイルを選択してください。"); return; }
+    document.getElementById("playBtn").addEventListener("click",async()=>{
+      if(!audioBuffer){alert("音声ファイルを選択してください。");return;}
       await audioContext.resume();
-      const source = audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      dataArray = new Uint8Array(analyser.frequencyBinCount);
+      const source=audioContext.createBufferSource();
+      source.buffer=audioBuffer;
+      analyser=audioContext.createAnalyser();
+      analyser.fftSize=256;
+      dataArray=new Uint8Array(analyser.frequencyBinCount);
       source.connect(analyser);
       analyser.connect(audioContext.destination);
-      collectedData = [];
+      collectedData=[];
       source.start();
-      source.onended = () => { clearInterval(intervalId); cancelAnimationFrame(animationId); };
-      intervalId = setInterval(() => {
+      source.onended=()=>{clearInterval(intervalId);cancelAnimationFrame(animationId);};
+      intervalId=setInterval(()=>{
         analyser.getByteFrequencyData(dataArray);
-        const frame = Array.from({ length: numBars }, (_, i) =>
-          String(dataArray[Math.floor((i / numBars) * dataArray.length)]).padStart(3, "0")
+        const frame=Array.from({length:numBars},(_,i)=>
+          String(dataArray[Math.floor((i/numBars)*dataArray.length)]).padStart(3,"0")
         );
         collectedData.push(frame);
         updateSDFText();
-      }, 50);
-      (function draw() {
-        animationId = requestAnimationFrame(draw);
+      },50);
+      (function draw(){
+        animationId=requestAnimationFrame(draw);
         analyser.getByteFrequencyData(dataArray);
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const cx = canvas.width/2, cy = canvas.height/2, r = 60;
-        for (let i = 0; i < numBars; i++) {
-          const ang = (i/numBars)*2*Math.PI;
-          const idx = Math.floor((i/numBars)*dataArray.length);
-          const mag = dataArray[idx];
-          const len = mag <= 200 ? (mag/200)*150 : 150 + Math.log10(1 + mag - 200)*50;
-          const x = Math.cos(ang), y = Math.sin(ang);
-          ctx.lineWidth = 4;
-          ctx.strokeStyle = `hsl(${i*360/numBars},100%,50%)`;
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        const cx=canvas.width/2,cy=canvas.height/2,r=60;
+        for(let i=0;i<numBars;i++){
+          const ang=(i/numBars)*2*Math.PI;
+          const idx=Math.floor((i/numBars)*dataArray.length);
+          const mag=dataArray[idx];
+          const len=mag<=200?(mag/200)*150:150+Math.log10(1+mag-200)*50;
+          const x=Math.cos(ang),y=Math.sin(ang);
+          ctx.lineWidth=4;
+          ctx.strokeStyle=`hsl(${i*360/numBars},100%,50%)`;
           ctx.beginPath();
-          ctx.moveTo(cx + x*r, cy + y*r);
-          ctx.lineTo(cx + x*(r + len), cy + y*(r + len));
+          ctx.moveTo(cx+x*r,cy+y*r);
+          ctx.lineTo(cx+x*(r+len),cy+y*(r+len));
           ctx.stroke();
         }
       })();
     });
-
-    function makeLabels(n) {
-      return Array.from({ length: n }, (_, i) => String(i + 1));
+    function updateSDFText(){
+      const labels=Array.from({length:numBars},(_,i)=>String(i+1));
+      const lists=Array.from({length:numBars},()=>[]);
+      collectedData.forEach(frame=>{frame.forEach((v,i)=>lists[i].push(v));});
+      document.getElementById("sdfTextArea").value=
+        lists.map((l,i)=>`[${labels[i]}]:${l.join(",")}`).join("/");
     }
-
-    function updateSDFText() {
-      const labels = makeLabels(numBars);
-      const lists = Array.from({ length: numBars }, () => []);
-      collectedData.forEach(frame => {
-        frame.forEach((v, i) => lists[i].push(v));
-      });
-      document.getElementById("sdfTextArea").value =
-        lists.map((l, i) => `[${labels[i]}]:${l.join(",")}`).join("/");
-    }
-
-    function parseSDF(text) {
-      const res = {};
-      text.split("/").forEach(entry => {
-        const m = entry.match(/^\[(\d+)\]:(.+)/);
-        if (m) res[m[1]] = m[2].split(",").map(x => x.trim().padStart(3, "0"));
+    function parseSDF(text){
+      const res={};
+      text.split("/").forEach(e=>{
+        const m=e.match(/^\[(\d+)\]:(.+)/);
+        if(m)res[m[1]]=m[2].split(",").map(x=>x.trim().padStart(3,"0"));
       });
       return res;
     }
-
-    document.getElementById("exportSpriteBtn").addEventListener("click", async () => {
-      const sdfData = parseSDF(document.getElementById("sdfTextArea").value);
-      const resp = await fetch(
+    document.getElementById("exportSpriteBtn").addEventListener("click",async()=>{
+      const sdfData=parseSDF(document.getElementById("sdfTextArea").value);
+      const resp=await fetch(
         "https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/pages/.sprite3/てんp.sprite3"
       );
-      const blob = await resp.blob();
-      const zip = await JSZip.loadAsync(blob);
-      const projectJson = JSON.parse(await zip.file("project.json").async("string"));
-      const target = projectJson.targets.find(t => t.name === "てんp");
-      const listsObj = target.lists;
-      console.log("★ listIdMap:", (() => {
-        const m = {};
-        Object.entries(listsObj).forEach(([id, entry]) => {
-          const n = entry[0].match(/^\[(\d+)\]$/);
-          if (n) m[n[1]] = id;
-        });
-        return m;
-      })());
-      const listIdMap = Object.entries(listsObj).reduce((m, [id, entry]) => {
-        const match = entry[0].match(/^\[(\d+)\]$/);
-        if (match) m[match[1]] = id;
-        return m;
-      }, {});
-      for (const key in sdfData) {
-        const id = listIdMap[key];
-        if (id) {
-          console.log(`Overwrite [${key}] → ${id} (${sdfData[key].length})`);
-          listsObj[id] = [`[${key}]`, sdfData[key]];
-        } else {
-          console.warn(`No mapping for [${key}]`);
-        }
+      const blob=await resp.blob();
+      const zip=await JSZip.loadAsync(blob);
+      const spriteJson=JSON.parse(await zip.file("sprite.json").async("string"));
+      const listsObj=spriteJson.lists;
+      const listIdMap = {
+        "1": "ID_for_1",
+        "2": "ID_for_2",
+        // …ステップ1で取得したマッピングをここに丸ごと貼り付け…
+        "60": "ID_for_60"
+      };
+      for(const key in sdfData){
+        const id=listIdMap[key];
+        if(id)listsObj[id]=[`[${key}]`,sdfData[key]];
       }
-      zip.file("project.json", JSON.stringify(projectJson, null, 2));
-      const newBlob = await zip.generateAsync({ type: "blob" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(newBlob);
-      a.download = "output_with_sdf.sprite3";
+      zip.file("sprite.json",JSON.stringify(spriteJson,null,2));
+      const newBlob=await zip.generateAsync({type:"blob"});
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(newBlob);
+      a.download="output_with_sdf.sprite3";
       a.click();
     });
   </script>
