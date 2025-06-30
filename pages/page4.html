@@ -2,145 +2,172 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>scratch 波形</title>
+  <title>scratch 波形（可変バー本数対応）</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <link rel="stylesheet" href="https://kikukick.github.io/kikukick_program_page/pages/my_account/account.css">
   <style>
-    body { background:#121212; color:#fff; font-family:'Arial',sans-serif; display:flex; flex-direction:column; align-items:center; margin:0; padding:0; }
-    h2,h3 { margin-top:20px; }
-    canvas { background:#1a1a1a; border-radius:10px; box-shadow:0 0 10px rgba(255,255,255,0.2); margin-top:20px; }
-    textarea { width:90%; height:120px; margin-top:20px; padding:10px; border:none; border-radius:8px; font-family:monospace; font-size:1rem; background:#333; color:#fff; resize:none; }
-    textarea:focus { outline:none; border:1px solid #ff4081; }
-    button { background-color:#6200ea; color:white; border:none; padding:12px 24px; font-size:1rem; font-weight:bold; border-radius:30px; margin-top:20px; cursor:pointer; transition:all .3s ease-in-out; }
-    button:hover { background-color:#3700b3; transform:translateY(-2px); }
-    input[type=file],input[type=number] { margin-top:20px; }
-    .instructions { background:#333; padding:20px; border-radius:8px; margin-top:30px; width:80%; max-width:800px; }
-    .controls { display:flex; align-items:center; gap:1em; margin-top:20px; }
-    .controls label { font-weight:bold; }
+    body { background: #121212; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 0; }
+    h2, h3 { margin-top: 20px; }
+    canvas { background: #1a1a1a; border-radius: 10px; box-shadow: 0 0 10px rgba(255,255,255,0.2); margin-top: 20px; }
+    textarea { width: 90%; height: 120px; margin-top: 20px; padding: 10px; border: none; border-radius: 8px; font-family: monospace; background: #333; color: #fff; resize: none; }
+    input, button, label { margin-top: 20px; }
+    input[type="number"] { width: 60px; padding: 5px; border-radius: 4px; border: 1px solid #555; background: #222; color: #fff; }
+    button { background-color: #6200ea; color: white; border: none; padding: 12px 24px; font-size: 1rem; border-radius: 30px; cursor: pointer; transition: 0.3s; }
+    button:hover { background-color: #3700b3; transform: translateY(-2px); }
   </style>
 </head>
 <body>
   <h1>只今メンテ中です。申し訳ない。2025/7/2~3復旧</h1>
-  <h2>オーディオをアップロードしてSDF生成</h2>
-  <h3>⚠️曲の再生中に他のタブに移動しないでください。</h3>
-  <div class="instructions">
-    <h3>使用方法</h3>
-    <p>① 任意の音楽をアップロードします。</p>
-    <p>② 他のサイトなどに行かず、音楽が終わるのを待ってください（重要）。</p>
-    <p>③ 再生が終わった後、画面下の「sprite3を生成してDL」ボタンを押してください。</p>
-    <p>④ ダウンロードされる .sprite3 ファイルをScratchで開くと、波形情報がリストに追加されている状態で表示されます。</p>
-  </div>
-  <div class="controls">
-    <input type="file" id="audioFile">
-    <label>本数:<input type="number" id="barCount" min="1" max="60" value="19"></label>
+  <h2>可変本数オーディオ波形→SDF & sprite3出力</h2>
+
+  <label for="numBars">波形バー本数 (1〜60):</label>
+  <input type="number" id="numBars" min="1" max="60" value="19">
+
+  <div>
+    <input type="file" id="audioFile" accept="audio/*">
     <button id="playBtn">再生＆解析開始</button>
   </div>
+
   <canvas id="canvas"></canvas>
-  <h3>SDF出力（編集可能）</h3>
-  <textarea id="sdfTextArea" placeholder="[1]:000,001,002/...;"></textarea><br>
+
+  <h3>SDF出力（編集可）</h3>
+  <textarea id="sdfTextArea" placeholder="[1]:000,001.../[2]:..."></textarea><br>
   <button id="exportSpriteBtn">sprite3を生成してDL</button>
+
   <script>
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth; canvas.height = 400;
-    const barCountInput = document.getElementById("barCount");
-    let numBars = parseInt(barCountInput.value,10);
-    barCountInput.addEventListener("change",()=>{
-      let v = parseInt(barCountInput.value,10);
-      if(isNaN(v)||v<1)v=1; if(v>60)v=60;
-      barCountInput.value=v; numBars=v;
-    });
-    let audioContext,analyser,dataArray,collectedData=[],intervalId,animationId,audioBuffer=null;
-    document.getElementById("audioFile").addEventListener("change",async e=>{
-      const file=e.target.files[0];
-      if(!file)return;
-      const buf=await file.arrayBuffer();
-      audioContext=new(window.AudioContext||window.webkitAudioContext)();
-      audioBuffer=await audioContext.decodeAudioData(buf);
-    });
-    document.getElementById("playBtn").addEventListener("click",async()=>{
-      if(!audioBuffer){alert("音声ファイルを選択してください。");return;}
-      await audioContext.resume();
-      const source=audioContext.createBufferSource();
-      source.buffer=audioBuffer;
-      analyser=audioContext.createAnalyser();
-      analyser.fftSize=256;
-      dataArray=new Uint8Array(analyser.frequencyBinCount);
-      source.connect(analyser);
-      analyser.connect(audioContext.destination);
-      collectedData=[];
-      source.start();
-      source.onended=()=>{clearInterval(intervalId);cancelAnimationFrame(animationId);};
-      intervalId=setInterval(()=>{
-        analyser.getByteFrequencyData(dataArray);
-        const frame=Array.from({length:numBars},(_,i)=>
-          String(dataArray[Math.floor((i/numBars)*dataArray.length)]).padStart(3,"0")
+    const fileInput     = document.getElementById("audioFile");
+    const playBtn       = document.getElementById("playBtn");
+    const exportBtn     = document.getElementById("exportSpriteBtn");
+    const numBarsInput  = document.getElementById("numBars");
+    const canvas        = document.getElementById("canvas");
+    const ctx           = canvas.getContext("2d");
+    const sdfTA         = document.getElementById("sdfTextArea");
+
+    let audioCtx, analyser, dataArray, audioBuffer;
+    let collectedFrames = [];
+    let drawId, sampleInterval;
+
+    canvas.height = 300;
+
+    function drawLoop() {
+      drawId = requestAnimationFrame(drawLoop);
+      if (!analyser) return;
+
+      analyser.getByteFrequencyData(dataArray);
+      const num = Math.min(60, Math.max(1, +numBarsInput.value));
+      const barWidth = canvas.width / num;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < num; i++) {
+        const idx = Math.floor((i / num) * dataArray.length);
+        const mag = dataArray[idx];
+        const length = mag < 200
+          ? (mag / 200) * (canvas.height/2)
+          : (canvas.height/2) + Math.log10(1 + (mag-200)) * 20;
+        const angle = (i / num) * 2 * Math.PI;
+        const cx = canvas.width/2 + Math.cos(angle)*50;
+        const cy = canvas.height/2 + Math.sin(angle)*50;
+        ctx.strokeStyle = `hsl(${i*360/num},100%,50%)`;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(
+          cx + Math.cos(angle)*(50+length),
+          cy + Math.sin(angle)*(50+length)
         );
-        collectedData.push(frame);
-        updateSDFText();
-      },50);
-      (function draw(){
-        animationId=requestAnimationFrame(draw);
-        analyser.getByteFrequencyData(dataArray);
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        const cx=canvas.width/2,cy=canvas.height/2,r=60;
-        for(let i=0;i<numBars;i++){
-          const ang=(i/numBars)*2*Math.PI;
-          const idx=Math.floor((i/numBars)*dataArray.length);
-          const mag=dataArray[idx];
-          const len=mag<=200?(mag/200)*150:150+Math.log10(1+mag-200)*50;
-          const x=Math.cos(ang),y=Math.sin(ang);
-          ctx.lineWidth=4;
-          ctx.strokeStyle=`hsl(${i*360/numBars},100%,50%)`;
-          ctx.beginPath();
-          ctx.moveTo(cx+x*r,cy+y*r);
-          ctx.lineTo(cx+x*(r+len),cy+y*(r+len));
-          ctx.stroke();
-        }
-      })();
-    });
-    function updateSDFText(){
-      const labels=Array.from({length:numBars},(_,i)=>String(i+1));
-      const lists=Array.from({length:numBars},()=>[]);
-      collectedData.forEach(frame=>{frame.forEach((v,i)=>lists[i].push(v));});
-      document.getElementById("sdfTextArea").value=
-        lists.map((l,i)=>`[${labels[i]}]:${l.join(",")}`).join("/");
-    }
-    function parseSDF(text){
-      const res={};
-      text.split("/").forEach(e=>{
-        const m=e.match(/^\[(\d+)\]:(.+)/);
-        if(m)res[m[1]]=m[2].split(",").map(x=>x.trim().padStart(3,"0"));
-      });
-      return res;
-    }
-    document.getElementById("exportSpriteBtn").addEventListener("click",async()=>{
-      const sdfData=parseSDF(document.getElementById("sdfTextArea").value);
-      const resp=await fetch(
-        "https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/pages/.sprite3/てんp.sprite3"
-      );
-      const blob=await resp.blob();
-      const zip=await JSZip.loadAsync(blob);
-      const spriteJson=JSON.parse(await zip.file("sprite.json").async("string"));
-      const listsObj=spriteJson.lists;
-      const listIdMap = {
-        "1": "ID_for_1",
-        "2": "ID_for_2",
-        // …ステップ1で取得したマッピングをここに丸ごと貼り付け…
-        "60": "ID_for_60"
-      };
-      for(const key in sdfData){
-        const id=listIdMap[key];
-        if(id)listsObj[id]=[`[${key}]`,sdfData[key]];
+        ctx.stroke();
       }
-      zip.file("sprite.json",JSON.stringify(spriteJson,null,2));
-      const newBlob=await zip.generateAsync({type:"blob"});
-      const a=document.createElement("a");
-      a.href=URL.createObjectURL(newBlob);
-      a.download="output_with_sdf.sprite3";
+    }
+
+    function updateSDF() {
+      const num = Math.min(60, Math.max(1, +numBarsInput.value));
+      const lists = Array.from({length: num}, () => []);
+      collectedFrames.forEach(frame => {
+        for (let i = 0; i < num; i++) lists[i].push(frame[i]);
+      });
+      const sdf = lists.map((arr, i) =>
+        `[${i+1}]:${arr.join(",")}`
+      ).join("/");
+      sdfTA.value = sdf;
+    }
+
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const buf = await file.arrayBuffer();
+      audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      audioBuffer = await audioCtx.decodeAudioData(buf);
+    });
+
+    playBtn.addEventListener("click", async () => {
+      if (!audioBuffer) return alert("音声ファイルを先に選択してください");
+      await audioCtx.resume();
+      const src = audioCtx.createBufferSource();
+      src.buffer = audioBuffer;
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      dataArray = new Uint8Array(analyser.frequencyBinCount);
+      src.connect(analyser);
+      analyser.connect(audioCtx.destination);
+      collectedFrames = [];
+      src.start();
+
+      sampleInterval = setInterval(() => {
+        analyser.getByteFrequencyData(dataArray);
+        const num = Math.min(60, Math.max(1, +numBarsInput.value));
+        const frame = Array.from({length: num}, (_, i) =>
+          String(dataArray[Math.floor(i/num*dataArray.length)]).padStart(3, "0")
+        );
+        collectedFrames.push(frame);
+        updateSDF();
+      }, 50);
+
+      src.onended = () => {
+        clearInterval(sampleInterval);
+        cancelAnimationFrame(drawId);
+      };
+
+      drawLoop();
+    });
+
+    exportBtn.addEventListener("click", async () => {
+      const num = Math.min(60, Math.max(1, +numBarsInput.value));
+      const sdfText = sdfTA.value;
+
+      const resp = await fetch("https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/pages/.sprite3/てんp.sprite3");
+      const blob = await resp.blob();
+      const zip  = await JSZip.loadAsync(blob);
+      const spriteJson = JSON.parse(await zip.file("sprite.json").async("string"));
+
+      const listIdMap = {};
+      for (const [id, arr] of Object.entries(spriteJson.lists)) {
+        const name = arr[0];
+        listIdMap[name] = id;
+      }
+
+      function parseSDF(txt) {
+        const res = {};
+        txt.split("/").forEach(entry => {
+          const m = entry.match(/\\[(\\d{1,2})\\]:(.*)/);
+          if (m) res[m[1]] = m[2].split(",").map(s => s.trim().padStart(3,"0"));
+        });
+        return res;
+      }
+      const sdfData = parseSDF(sdfText);
+
+      for (let i = 1; i <= num; i++) {
+        const key = String(i);
+        const id  = listIdMap[key];
+        if (!id) continue;
+        spriteJson.lists[id] = [ key, sdfData[key] || [] ];
+      }
+
+      zip.file("sprite.json", JSON.stringify(spriteJson, null, 2));
+      const newBlob = await zip.generateAsync({ type: "blob" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(newBlob);
+      a.download = "output_with_sdf.sprite3";
       a.click();
     });
   </script>
-  <script src="https://kikukick.github.io/kikukick_program_page/pages/my_account/account.js"></script>
 </body>
 </html>
