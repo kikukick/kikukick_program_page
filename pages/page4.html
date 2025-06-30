@@ -16,153 +16,120 @@
   </style>
 </head>
 <body>
-  <h1>只今メンテ中です。申し訳ない。2025/7/2~3復旧</h1>
   <h2>可変本数オーディオ波形→SDF & sprite3出力</h2>
-
   <label for="numBars">波形バー本数 (1〜60):</label>
   <input type="number" id="numBars" min="1" max="60" value="19">
-
   <div>
     <input type="file" id="audioFile" accept="audio/*">
     <button id="playBtn">再生＆解析開始</button>
   </div>
-
   <canvas id="canvas"></canvas>
-
   <h3>SDF出力（編集可）</h3>
   <textarea id="sdfTextArea" placeholder="[1]:000,001.../[2]:..."></textarea><br>
   <button id="exportSpriteBtn">sprite3を生成してDL</button>
-
   <script>
-    const fileInput     = document.getElementById("audioFile");
-    const playBtn       = document.getElementById("playBtn");
-    const exportBtn     = document.getElementById("exportSpriteBtn");
-    const numBarsInput  = document.getElementById("numBars");
-    const canvas        = document.getElementById("canvas");
-    const ctx           = canvas.getContext("2d");
-    const sdfTA         = document.getElementById("sdfTextArea");
-
-    let audioCtx, analyser, dataArray, audioBuffer;
-    let collectedFrames = [];
-    let drawId, sampleInterval;
-
+    const audioFile = document.getElementById("audioFile");
+    const playBtn   = document.getElementById("playBtn");
+    const exportBtn = document.getElementById("exportSpriteBtn");
+    const numBars   = document.getElementById("numBars");
+    const canvas    = document.getElementById("canvas");
+    const ctx       = canvas.getContext("2d");
+    const sdfTA     = document.getElementById("sdfTextArea");
+    let audioCtx, analyser, dataArray, bufferSrc, collected = [], animId, intervalId;
     canvas.height = 300;
-
-    function drawLoop() {
-      drawId = requestAnimationFrame(drawLoop);
+    function draw() {
+      animId = requestAnimationFrame(draw);
       if (!analyser) return;
-
       analyser.getByteFrequencyData(dataArray);
-      const num = Math.min(60, Math.max(1, +numBarsInput.value));
-      const barWidth = canvas.width / num;
+      const n = Math.min(60, Math.max(1, +numBars.value));
+      const angleStep = 2 * Math.PI / n;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      for (let i = 0; i < num; i++) {
-        const idx = Math.floor((i / num) * dataArray.length);
+      for (let i = 0; i < n; i++) {
+        const idx = Math.floor(i / n * dataArray.length);
         const mag = dataArray[idx];
-        const length = mag < 200
-          ? (mag / 200) * (canvas.height/2)
-          : (canvas.height/2) + Math.log10(1 + (mag-200)) * 20;
-        const angle = (i / num) * 2 * Math.PI;
+        const len = mag < 200
+          ? mag / 200 * 100
+          : 100 + Math.log10(1 + (mag - 200)) * 20;
+        const angle = i * angleStep;
         const cx = canvas.width/2 + Math.cos(angle)*50;
         const cy = canvas.height/2 + Math.sin(angle)*50;
-        ctx.strokeStyle = `hsl(${i*360/num},100%,50%)`;
+        ctx.strokeStyle = `hsl(${i*360/n},100%,50%)`;
         ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(cx, cy);
         ctx.lineTo(
-          cx + Math.cos(angle)*(50+length),
-          cy + Math.sin(angle)*(50+length)
+          cx + Math.cos(angle)*(50+len),
+          cy + Math.sin(angle)*(50+len)
         );
         ctx.stroke();
       }
     }
-
     function updateSDF() {
-      const num = Math.min(60, Math.max(1, +numBarsInput.value));
-      const lists = Array.from({length: num}, () => []);
-      collectedFrames.forEach(frame => {
-        for (let i = 0; i < num; i++) lists[i].push(frame[i]);
+      const n = Math.min(60, Math.max(1, +numBars.value));
+      const lists = Array.from({length: n}, () => []);
+      collected.forEach(frame => {
+        for (let i = 0; i < n; i++) lists[i].push(frame[i]);
       });
-      const sdf = lists.map((arr, i) =>
-        `[${i+1}]:${arr.join(",")}`
-      ).join("/");
-      sdfTA.value = sdf;
+      sdfTA.value = lists.map((arr,i)=>`[${i+1}]:${arr.join(",")}`).join("/");
     }
-
-    fileInput.addEventListener("change", async () => {
-      const file = fileInput.files[0];
+    audioFile.addEventListener("change", async ()=>{
+      const file = audioFile.files[0];
       if (!file) return;
-      const buf = await file.arrayBuffer();
+      const ab = await file.arrayBuffer();
       audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-      audioBuffer = await audioCtx.decodeAudioData(buf);
+      const buf = await audioCtx.decodeAudioData(ab);
+      bufferSrc = buf;
     });
-
-    playBtn.addEventListener("click", async () => {
-      if (!audioBuffer) return alert("音声ファイルを先に選択してください");
-      await audioCtx.resume();
+    playBtn.addEventListener("click", async ()=>{
+      if (!bufferSrc) return alert("音声ファイルを選択してください");
+      if (audioCtx.state==="suspended") await audioCtx.resume();
       const src = audioCtx.createBufferSource();
-      src.buffer = audioBuffer;
+      src.buffer = bufferSrc;
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
       dataArray = new Uint8Array(analyser.frequencyBinCount);
       src.connect(analyser);
       analyser.connect(audioCtx.destination);
-      collectedFrames = [];
+      collected = [];
       src.start();
-
-      sampleInterval = setInterval(() => {
+      intervalId = setInterval(()=>{
         analyser.getByteFrequencyData(dataArray);
-        const num = Math.min(60, Math.max(1, +numBarsInput.value));
-        const frame = Array.from({length: num}, (_, i) =>
-          String(dataArray[Math.floor(i/num*dataArray.length)]).padStart(3, "0")
-        );
-        collectedFrames.push(frame);
+        const n = Math.min(60, Math.max(1, +numBars.value));
+        const frame = [];
+        for (let i = 0; i < n; i++){
+          const idx = Math.floor(i / n * dataArray.length);
+          frame.push(String(dataArray[idx]).padStart(3,"0"));
+        }
+        collected.push(frame);
         updateSDF();
-      }, 50);
-
-      src.onended = () => {
-        clearInterval(sampleInterval);
-        cancelAnimationFrame(drawId);
+      },50);
+      src.onended = ()=>{
+        clearInterval(intervalId);
+        cancelAnimationFrame(animId);
       };
-
-      drawLoop();
+      draw();
     });
-
-    exportBtn.addEventListener("click", async () => {
-      const num = Math.min(60, Math.max(1, +numBarsInput.value));
+    exportBtn.addEventListener("click", async ()=>{
+      const n = Math.min(60, Math.max(1, +numBars.value));
       const sdfText = sdfTA.value;
-
       const resp = await fetch("https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/pages/.sprite3/てんp.sprite3");
       const blob = await resp.blob();
-      const zip  = await JSZip.loadAsync(blob);
-      const spriteJson = JSON.parse(await zip.file("sprite.json").async("string"));
-
-      const listIdMap = {};
-      for (const [id, arr] of Object.entries(spriteJson.lists)) {
-        const name = arr[0];
-        listIdMap[name] = id;
-      }
-
-      function parseSDF(txt) {
-        const res = {};
-        txt.split("/").forEach(entry => {
-          const m = entry.match(/\\[(\\d{1,2})\\]:(.*)/);
-          if (m) res[m[1]] = m[2].split(",").map(s => s.trim().padStart(3,"0"));
-        });
-        return res;
-      }
-      const sdfData = parseSDF(sdfText);
-
-      for (let i = 1; i <= num; i++) {
+      const zip = await JSZip.loadAsync(blob);
+      const sj = JSON.parse(await zip.file("sprite.json").async("string"));
+      const map = {};
+      for (const [id, arr] of Object.entries(sj.lists)) map[arr[0]] = id;
+      const data = {};
+      sdfText.split("/").forEach(e=>{
+        const m = e.match(/\[(\d{1,2})\]:(.*)/);
+        if (m) data[m[1]] = m[2].split(",");
+      });
+      for (let i = 1; i <= n; i++){
         const key = String(i);
-        const id  = listIdMap[key];
-        if (!id) continue;
-        spriteJson.lists[id] = [ key, sdfData[key] || [] ];
+        const id  = map[key];
+        if (id) sj.lists[id] = [key, data[key] || []];
       }
-
-      zip.file("sprite.json", JSON.stringify(spriteJson, null, 2));
-      const newBlob = await zip.generateAsync({ type: "blob" });
+      zip.file("sprite.json", JSON.stringify(sj, null, 2));
+      const newBlob = await zip.generateAsync({type:"blob"});
       const a = document.createElement("a");
       a.href = URL.createObjectURL(newBlob);
       a.download = "output_with_sdf.sprite3";
