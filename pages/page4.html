@@ -70,12 +70,6 @@
       width: 80%;
       max-width: 800px;
     }
-    .instructions h3 {
-      margin-top: 0;
-    }
-    .instructions p {
-      margin: 10px 0;
-    }
     .controls {
       display: flex;
       align-items: center;
@@ -127,17 +121,15 @@
     let audioContext, analyser, dataArray, collectedData = [];
     let intervalId, animationId;
     let audioBuffer = null;
-    const fileInput = document.getElementById("audioFile");
-    const playBtn = document.getElementById("playBtn");
-    fileInput.addEventListener("change", async () => {
-      const file = fileInput.files[0];
+    document.getElementById("audioFile").addEventListener("change", async e => {
+      const file = e.target.files[0];
       if (!file) return;
       const arrayBuffer = await file.arrayBuffer();
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
     });
-    playBtn.addEventListener("click", async () => {
-      if (!audioBuffer || !audioContext) {
+    document.getElementById("playBtn").addEventListener("click", async () => {
+      if (!audioBuffer) {
         alert("音声ファイルを選択してください。");
         return;
       }
@@ -164,96 +156,71 @@
         collectedData.push(frame);
         updateSDFText();
       }, 50);
-      drawBars();
-    });
-    function drawBars() {
-      animationId = requestAnimationFrame(drawBars);
-      if (!analyser) return;
-      analyser.getByteFrequencyData(dataArray);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-      const radius = 60;
-      for (let i = 0; i < numBars; i++) {
-        const angle = (i / numBars) * 2 * Math.PI;
-        const index = Math.floor((i / numBars) * dataArray.length);
-        const magnitude = dataArray[index];
-        let length;
-        if (magnitude <= 200) {
-          length = (magnitude / 200) * 150;
-        } else {
-          length = 150 + Math.log10(1 + (magnitude - 200)) * 50;
+      (function draw() {
+        animationId = requestAnimationFrame(draw);
+        analyser.getByteFrequencyData(dataArray);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const cx = canvas.width/2, cy = canvas.height/2, r = 60;
+        for (let i = 0; i < numBars; i++) {
+          const ang = (i/numBars)*2*Math.PI;
+          const idx = Math.floor((i/numBars)*dataArray.length);
+          const mag = dataArray[idx];
+          const len = mag<=200 ? (mag/200)*150 : 150+Math.log10(1+mag-200)*50;
+          const x = Math.cos(ang), y = Math.sin(ang);
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = `hsl(${i*360/numBars},100%,50%)`;
+          ctx.beginPath();
+          ctx.moveTo(cx+x*r, cy+y*r);
+          ctx.lineTo(cx+x*(r+len), cy+y*(r+len));
+          ctx.stroke();
         }
-        const x = Math.cos(angle);
-        const y = Math.sin(angle);
-        ctx.lineWidth = 4;
-        ctx.strokeStyle = `hsl(${i * 360 / numBars}, 100%, 50%)`;
-        ctx.beginPath();
-        ctx.moveTo(centerX + x * radius, centerY + y * radius);
-        ctx.lineTo(centerX + x * (radius + length), centerY + y * (radius + length));
-        ctx.stroke();
-      }
-    }
+      })();
+    });
     function makeLabels(n) {
-      return Array.from({ length: n }, (_, i) => String(i + 1));
+      return Array.from({ length: n }, (_, i) => String(i+1));
     }
     function updateSDFText() {
       const labels = makeLabels(numBars);
       const lists = Array.from({ length: numBars }, () => []);
-      collectedData.forEach(frame => {
-        for (let i = 0; i < numBars; i++) {
-          lists[i].push(frame[i]);
-        }
-      });
-      const sdf = lists
-        .map((list, i) => `[${labels[i]}]:${list.join(",")}`)
-        .join("/");
-      document.getElementById("sdfTextArea").value = sdf;
+      collectedData.forEach(f => { for (let i=0;i<numBars;i++) lists[i].push(f[i]); });
+      document.getElementById("sdfTextArea").value =
+        lists.map((l,i)=>`[${labels[i]}]:${l.join(",")}`).join("/");
     }
     function parseSDF(text) {
-      const result = {};
-      text.split("/").forEach(entry => {
-        const match = entry.match(/^\[(\d+)\]:(.+)/);
-        if (match) {
-          const key = match[1];
-          const values = match[2].split(",").map(x => x.trim().padStart(3, "0"));
-          result[key] = values;
-        }
+      const res = {};
+      text.split("/").forEach(e=>{
+        const m = e.match(/^\[(\d+)\]:(.+)/);
+        if (m) res[m[1]] = m[2].split(",").map(x=>x.trim().padStart(3,"0"));
       });
-      return result;
+      return res;
     }
     document.getElementById("exportSpriteBtn").addEventListener("click", async () => {
-      const sdfText = document.getElementById("sdfTextArea").value;
-      const sdfData = parseSDF(sdfText);
-      const response = await fetch(
+      const sdfData = parseSDF(document.getElementById("sdfTextArea").value);
+      const resp = await fetch(
         "https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/pages/.sprite3/てんp.sprite3"
       );
-      const blob = await response.blob();
+      const blob = await resp.blob();
       const zip = await JSZip.loadAsync(blob);
       const spriteJson = JSON.parse(await zip.file("sprite.json").async("string"));
-      const target = spriteJson.targets.find(t => t.name === "てんp");
-      if (!target) return;
-      const listsObj = target.lists;
+      const listsObj = spriteJson.lists;
+      console.log("★ listsObj keys:", Object.keys(listsObj));
       const listIdMap = {};
-      for (const [id, entry] of Object.entries(listsObj)) {
-        const name = entry[0];
+      for (const [id,[name]] of Object.entries(listsObj)) {
         const m = name.match(/^\[(\d+)\]$/);
-        if (m && +m[1] >= 1 && +m[1] <= 60) {
-          listIdMap[m[1]] = id;
-        }
+        if (m && +m[1]>=1 && +m[1]<=60) listIdMap[m[1]] = id;
       }
       console.log("★ listIdMap:", listIdMap);
       for (const key in sdfData) {
         const id = listIdMap[key];
         if (id) {
-          console.log(`--> Overwriting list [${key}] → id "${id}" (${sdfData[key].length} frames)`);
+          console.log(`--> Overwriting [${key}] → ${id} (${sdfData[key].length} frames)`);
           listsObj[id] = [`[${key}]`, sdfData[key]];
         } else {
-          console.warn(`!! No mapping found for key [${key}]`);
+          console.warn(`!! No mapping for [${key}]`);
         }
       }
-      zip.file("sprite.json", JSON.stringify(spriteJson, null, 2));
-      const newBlob = await zip.generateAsync({ type: "blob" });
+      zip.file("sprite.json", JSON.stringify(spriteJson,null,2));
+      const newBlob = await zip.generateAsync({ type:"blob" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(newBlob);
       a.download = "output_with_sdf.sprite3";
