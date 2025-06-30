@@ -5,7 +5,6 @@
   <title>scratch 波形</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="stylesheet" href="https://kikukick.github.io/kikukick_program_page/pages/my_account/account.css">
-
   <style>
     body {
       background: #121212;
@@ -92,7 +91,6 @@
   <h1>メンテ中のため一時的に使えません。申し訳ございません。2025/7/2~3には更新される予定です</h1>
   <h2>オーディオをアップロードしてSDF生成</h2>
   <h3>⚠️曲の再生中に他のタブに移動しないでください。</h3>
-  
   <div class="instructions">
     <h3>使用方法</h3>
     <p>① 任意の音楽をアップロードします。</p>
@@ -100,7 +98,6 @@
     <p>③ 再生が終わった後、画面下の「sprite3を生成してDL」ボタンを押してください。</p>
     <p>④ ダウンロードされる .sprite3 ファイルをScratchで開くと、波形情報がリストに追加されている状態で表示されます。</p>
   </div>
-
   <div class="controls">
     <input type="file" id="audioFile">
     <label>
@@ -109,20 +106,15 @@
     </label>
     <button id="playBtn">再生＆解析開始</button>
   </div>
-
   <canvas id="canvas"></canvas>
-
   <h3>SDF出力（編集可能）</h3>
   <textarea id="sdfTextArea" placeholder="[1]:000,001,002/...;"></textarea><br>
   <button id="exportSpriteBtn">sprite3を生成してDL</button>
-
   <script>
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
     canvas.width = window.innerWidth;
     canvas.height = 400;
-
-    // 動的バー本数取得
     const barCountInput = document.getElementById("barCount");
     let numBars = parseInt(barCountInput.value, 10);
     barCountInput.addEventListener("change", () => {
@@ -132,14 +124,11 @@
       barCountInput.value = v;
       numBars = v;
     });
-
     let audioContext, analyser, dataArray, collectedData = [];
     let intervalId, animationId;
     let audioBuffer = null;
-
     const fileInput = document.getElementById("audioFile");
     const playBtn = document.getElementById("playBtn");
-
     fileInput.addEventListener("change", async () => {
       const file = fileInput.files[0];
       if (!file) return;
@@ -147,32 +136,25 @@
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
     });
-
     playBtn.addEventListener("click", async () => {
       if (!audioBuffer || !audioContext) {
         alert("音声ファイルを選択してください。");
         return;
       }
-
       await audioContext.resume();
       const source = audioContext.createBufferSource();
       source.buffer = audioBuffer;
-
       analyser = audioContext.createAnalyser();
       analyser.fftSize = 256;
       dataArray = new Uint8Array(analyser.frequencyBinCount);
-
       source.connect(analyser);
       analyser.connect(audioContext.destination);
       collectedData = [];
-
       source.start();
       source.onended = () => {
         clearInterval(intervalId);
         cancelAnimationFrame(animationId);
-        console.log("Audio ended");
       };
-
       intervalId = setInterval(() => {
         analyser.getByteFrequencyData(dataArray);
         const indices = Array.from({ length: numBars }, (_, i) =>
@@ -182,35 +164,28 @@
         collectedData.push(frame);
         updateSDFText();
       }, 50);
-
       drawBars();
     });
-
     function drawBars() {
       animationId = requestAnimationFrame(drawBars);
       if (!analyser) return;
       analyser.getByteFrequencyData(dataArray);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
       const radius = 60;
-
       for (let i = 0; i < numBars; i++) {
         const angle = (i / numBars) * 2 * Math.PI;
         const index = Math.floor((i / numBars) * dataArray.length);
         const magnitude = dataArray[index];
-
         let length;
         if (magnitude <= 200) {
           length = (magnitude / 200) * 150;
         } else {
           length = 150 + Math.log10(1 + (magnitude - 200)) * 50;
         }
-
         const x = Math.cos(angle);
         const y = Math.sin(angle);
-
         ctx.lineWidth = 4;
         ctx.strokeStyle = `hsl(${i * 360 / numBars}, 100%, 50%)`;
         ctx.beginPath();
@@ -219,11 +194,9 @@
         ctx.stroke();
       }
     }
-
     function makeLabels(n) {
       return Array.from({ length: n }, (_, i) => String(i + 1));
     }
-
     function updateSDFText() {
       const labels = makeLabels(numBars);
       const lists = Array.from({ length: numBars }, () => []);
@@ -237,7 +210,6 @@
         .join("/");
       document.getElementById("sdfTextArea").value = sdf;
     }
-
     function parseSDF(text) {
       const result = {};
       text.split("/").forEach(entry => {
@@ -250,7 +222,6 @@
       });
       return result;
     }
-
     document.getElementById("exportSpriteBtn").addEventListener("click", async () => {
       const sdfText = document.getElementById("sdfTextArea").value;
       const sdfData = parseSDF(sdfText);
@@ -260,8 +231,11 @@
       const blob = await response.blob();
       const zip = await JSZip.loadAsync(blob);
       const spriteJson = JSON.parse(await zip.file("sprite.json").async("string"));
+      const target = spriteJson.targets.find(t => t.name === "てんp");
+      if (!target) return;
+      const listsObj = target.lists;
       const listIdMap = {};
-      for (const [id, entry] of Object.entries(spriteJson.lists)) {
+      for (const [id, entry] of Object.entries(listsObj)) {
         const name = entry[0];
         const m = name.match(/^\[(\d+)\]$/);
         if (m && +m[1] >= 1 && +m[1] <= 60) {
@@ -273,7 +247,7 @@
         const id = listIdMap[key];
         if (id) {
           console.log(`--> Overwriting list [${key}] → id "${id}" (${sdfData[key].length} frames)`);
-          spriteJson.lists[id] = [`[${key}]`, sdfData[key]];
+          listsObj[id] = [`[${key}]`, sdfData[key]];
         } else {
           console.warn(`!! No mapping found for key [${key}]`);
         }
@@ -286,7 +260,6 @@
       a.click();
     });
   </script>
-
   <script src="https://kikukick.github.io/kikukick_program_page/pages/my_account/account.js"></script>
 </body>
 </html>
