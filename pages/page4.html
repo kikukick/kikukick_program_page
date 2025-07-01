@@ -61,7 +61,6 @@
   </style>
 </head>
 <body>
-  <h2>メンテ中</h2>
   <h2>オーディオをアップロードしてSDF生成 (拡張版)</h2>
   <h3>⚠️曲の再生中に他のタブに移動しないでください。</h3>
   <div class="instructions">
@@ -95,7 +94,7 @@
     const maxBars = 60;
     const listKeys = Array.from({ length: maxBars }, (_, i) => String(i + 1));
     const listIdMap = {
-            "1": "wrjicyhmuu[z,K{Ac*?7",    "2": "M~E+sSuFf0S^h!#u)uRO",
+      "1": "wrjicyhmuu[z,K{Ac*?7",    "2": "M~E+sSuFf0S^h!#u)uRO",
       "3": ")J#bVgJXl+lus%%sY,N1",    "4": "GgA5?^h0@^_@0_72Zvsx",
       "5": "qZKwKaO2Feywh43^p}Ls",    "6": "1Cz-*ryy;gF^5]ZAanfS",
       "7": "?LQ0TxT|[cBZsm).|7qR",    "8": "+_.2N~a]F;E@D3Ri)*Hs",
@@ -110,21 +109,21 @@
       "25": "_{Dh*~[i!cNc=Gf{~Fc]",   "26": "e{_,bqT:=!fLeL?,`av|",
       "27": "o@h)=_B%z4[tLO)gh6$-",   "28": "65iaJCB}qSl_rvO~~Z%A",
       "29": "cA|HR{dz1S3GJ2Immoo$",   "30": "L-QKKH7s[*tLzO4)ORrE",
-      "31": "3T8M1TsN7fswqO?!xEHC",    "32": "Q3Bd|gpZ8K7N0zb;;Wro",
-      "33": "I9Mg2y]2iX.i=eoM[$4j",    "34": "16k``0^_:_40?o?{WofT",
-      "35": "pgG%rc#J56VuUr4WX/Up",    "36": "jd%}.wnR[UFv7GZz:/2R",
-      "37": "J+`B@R+sZ(v{Vat9y,d#",    "38": "ZqmSFUO^+KCpl|UPAn=Z",
-      "39": "C]4{pn8}!j5gYzvK,%0x",    "40": "|0{YaD7CgOCG{{=q)7#O",
-      "41": "ApI~l8.`0;1J=m$3AGO;",    "42": "`|@~7^o2bIKZC~Td=(iE",
+      "31": "3T8M1TsN7fswqO?!xEHC",   "32": "Q3Bd|gpZ8K7N0zb;;Wro",
+      "33": "I9Mg2y]2iX.i=eoM[$4j",   "34": "16k``0^_:_40?o?{WofT",
+      "35": "pgG%rc#J56VuUr4WX/Up",   "36": "jd%}.wnR[UFv7GZz:/2R",
+      "37": "J+`B@R+sZ(v{Vat9y,d#",   "38": "ZqmSFUO^+KCpl|UPAn=Z",
+      "39": "C]4{pn8}!j5gYzvK,%0x",   "40": "|0{YaD7CgOCG{{=q)7#O",
+      "41": "ApI~l8.`0;1J=m$3AGO;",   "42": "`|@~7^o2bIKZC~Td=(iE",
       "43": ",sYU`E[|9O)a*QV)X84=",    "44": "xr4L)buV~0#RY,@[u)5K",
-      "45": "vJE/X8B[aVDp#1tTm+ey",    "46": "d*|al1VBM:5z8pWxjn0;",
-      "47": "ZPFnV}}$0pxLD;Yu8e9Q",    "48": "C_0~E`7La+2vU{iRQgo!",
-      "49": "a6;v{g;}r~!zl.@J3UXl",    "50": "|z*F~osCRxzcWBh[ikxW",
-      "51": "|G-|3Dp=|k6:9N8g)kC/",    "52": "MP}56lpY[!eT.J{=-{W^",
+      "45": "vJE/X8B[aVDp#1tTm+ey",   "46": "d*|al1VBM:5z8pWxjn0;",
+      "47": "ZPFnV}}$0pxLD;Yu8e9Q",   "48": "C_0~E`7La+2vU{iRQgo!",
+      "49": "a6;v{g;}r~!zl.@J3UXl",   "50": "|z*F~osCRxzcWBh[ikxW",
+      "51": "|G-|3Dp=|k6:9N8g)kC/",   "52": "MP}56lpY[!eT.J{=-{W^",
       "53": "]yv1d_o.TYOzW]w.Sm0@",    "54": "l*p!P$eFTD*2+3AE0=9?",
-      "55": "_!-?f+C/~?V=Tu--FW@h",    "56": ".=Rf,aZ?M.Mvz:d@[gQZ",
-      "57": "~6wD17QhpoZO-iuLOIU=",    "58": "FXO5ameEw-2}Pf5MPOD~",
-      "59": "ad8gH5(q`QS0:KbsDm~W",     "60": "Zc]DarN[{w?Lz4Hg]/RL"
+      "55": "_!-?f+C/~?V=Tu--FW@h",  "56": ".=Rf,aZ?M.Mvz:d@[gQZ",
+      "57": "~6wD17QhpoZO-iuLOIU=",  "58": "FXO5ameEw-2}Pf5MPOD~",
+      "59": "ad8gH5(q`QS0:KbsDm~W",  "60": "Zc]DarN[{w?Lz4Hg]/RL"
     };
 
     document.getElementById("audioFile").addEventListener("change", async function () {
@@ -140,51 +139,56 @@
         alert("音声ファイルを選択してください。再度お試しください");
         return;
       }
-      const count = parseInt(document.getElementById("barCount").value);
+      const count = parseInt(document.getElementById("barCount").value, 10);
       numBars = Math.min(Math.max(count, 1), maxBars);
+
       await audioContext.resume();
       const source = audioContext.createBufferSource();
       source.buffer = audioBuffer;
+
       analyser = audioContext.createAnalyser();
-      analyser.fftSize = 256;
+      analyser.fftSize = 128;  // 128 サンプル FFT に変更
       dataArray = new Uint8Array(analyser.frequencyBinCount);
+
       source.connect(analyser);
       analyser.connect(audioContext.destination);
+
       collectedData = [];
       source.start();
       source.onended = () => {
         clearInterval(intervalId);
         cancelAnimationFrame(animationId);
       };
+
+      // 100ms 間隔で FFT を取得 → collectedData にのみ使用
       intervalId = setInterval(() => {
         analyser.getByteFrequencyData(dataArray);
-        const indices = Array.from({ length: numBars }, (_, i) =>
-          Math.floor((i / numBars) * dataArray.length)
+        const frame = Array.from({ length: numBars }, (_, i) =>
+          String(dataArray[Math.floor((i / numBars) * dataArray.length)]).padStart(3, "0")
         );
-        const frame = indices.map(i => String(dataArray[i]).padStart(3, "0"));
         collectedData.push(frame);
-      }, 50);
+      }, 100);
+
       drawBars();
     });
 
     function drawBars() {
       animationId = requestAnimationFrame(drawBars);
       if (!analyser) return;
-      analyser.getByteFrequencyData(dataArray);
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
       const radius = 60;
+
       for (let i = 0; i < numBars; i++) {
         const angle = (i / numBars) * 2 * Math.PI;
         const index = Math.floor((i / numBars) * dataArray.length);
         const magnitude = dataArray[index];
-        let length;
-        if (magnitude <= 200) {
-          length = (magnitude / 200) * 150;
-        } else {
-          length = 150 + Math.log10(1 + (magnitude - 200)) * 50;
-        }
+        let length = magnitude <= 200
+          ? (magnitude / 200) * 150
+          : 150 + Math.log10(1 + (magnitude - 200)) * 50;
+
         const x = Math.cos(angle);
         const y = Math.sin(angle);
         ctx.lineWidth = 4;
@@ -196,7 +200,7 @@
       }
     }
 
-    document.getElementById("exportSpriteBtn").onclick = async () => {
+    document.getElementById("exportSpriteBtn").addEventListener("click", async () => {
       const response = await fetch("https://raw.githubusercontent.com/kikukick/kikukick_program_page/main/pages/.sprite3/template_.sprite3");
       const blob = await response.blob();
       const zip = await JSZip.loadAsync(blob);
@@ -218,7 +222,7 @@
       a.href = URL.createObjectURL(newBlob);
       a.download = "output_with_sdf.sprite3";
       a.click();
-    };
+    });
   </script>
   <script src="https://kikukick.github.io/kikukick_program_page/pages/my_account/account.js"></script>
 </body>
