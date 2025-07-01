@@ -61,17 +61,89 @@
   </style>
 </head>
 <body>
-  <h2>オーディオをアップロードしてSDF生成 (拡張版)</h2>
-  <h3>⚠️曲の再生中に他のタブに移動しないでください。</h3>
-  <div class="instructions">
-    <h3>使用方法</h3>
-    <p>① 任意の音楽をアップロードします。</p>
-    <p>② 生成するデータ本数を1〜60の範囲で入力します。</p>
-    <p>③ 他のサイトなどに行かず、音楽が終わるのを待ってください（重要）。</p>
-    <p>④ 再生が終わった後、画面下の「sprite3を生成してDL」ボタンを押してください。</p>
-    <p>⑤ ダウンロードされた .sprite3 ファイルをScratchで開くと、リスト[1]〜[N]に波形データが格納されています。</p>
-    <p>曲の長さが1m30s超えるようであれば本数をあげすぎるとサイトがとても重くなるので25以下がおすすめです。</p>
-  </div>
+<script>
+  const userLang = navigator.language || navigator.userLanguage;
+  const isJP = userLang.startsWith("ja");
+
+  const content = {
+    title: {
+      jp: "オーディオをアップロードしてSDF生成 (拡張版)",
+      en: "Upload Audio and Generate SDF (Extended)"
+    },
+    warning: {
+      jp: "⚠️ 曲の再生中は他のタブに移動しないでね！",
+      en: "⚠️ Please stay on this tab while your track is playing!"
+    },
+    whatIs: {
+      jp: "kasMOD（kikukick audio scratch model output designer）とは？",
+      en: "What is kasMOD?"
+    },
+    description: {
+      jp: `kasMOD は「Scratch でかんたんにオーディオ波形データを扱う」ことを目的に作られたツールです。`,
+      en: `kasMOD (kikukick audio scratch model output designer) is a tool designed to make handling audio waveform data in Scratch a breeze.`
+    },
+    description2: {
+      jp: `従来は波形データをコピー＆ペーストで入れ替える必要がありましたが、kasMOD ならテンプレートを使って<span style="font-weight:bold;">.sprite3 ファイルのままダウンロード</span>できます。`,
+      en: `Previously, you had to copy & paste waveform values manually, but with kasMOD you can use a template to <strong>download your project as a .sprite3 file directly</strong>.`
+    },
+    howTo: {
+      jp: "使い方",
+      en: "How to Use"
+    },
+    steps: {
+      jp: [
+        "音楽ファイルをアップロード",
+        "リストに格納する波形データの本数（1〜60）を入力",
+        "曲が終わるまで画面を閉じずにそのまま待機",
+        "再生終了後、「sprite3を生成してDL」ボタンをクリック",
+        "出力された .sprite3 を Scratch で開くと、リスト[1]〜[N]に波形データが自動セット"
+      ],
+      en: [
+        "Upload your audio file.",
+        "Enter the number of waveform data points to generate (1–60).",
+        "Wait on this page until playback finishes.",
+        "After playback ends, click “Generate & Download .sprite3”.",
+        "Open the downloaded .sprite3 in Scratch to find your waveform data auto-populated in lists [1]–[N]."
+      ]
+    },
+    note: {
+      jp: "※ 曲が長い場合はデータ本数を多くしすぎると重くなるので、90秒超なら25本以下がおすすめです。",
+      en: "※ For tracks longer than 90 seconds, we recommend keeping the data count at 25 or below to avoid performance issues."
+    }
+  };
+
+  window.addEventListener("DOMContentLoaded", () => {
+    const lang = isJP ? "jp" : "en";
+    document.getElementById("title").textContent = content.title[lang];
+    document.getElementById("warning").textContent = content.warning[lang];
+    document.getElementById("whatIs").textContent = content.whatIs[lang];
+    document.getElementById("description").textContent = content.description[lang];
+    document.getElementById("description2").innerHTML = content.description2[lang];
+    document.getElementById("howTo").textContent = content.howTo[lang];
+
+    const steps = content.steps[lang];
+    const list = document.getElementById("stepsList");
+    steps.forEach(step => {
+      const li = document.createElement("li");
+      li.textContent = step;
+      list.appendChild(li);
+    });
+
+    document.getElementById("note").textContent = content.note[lang];
+  });
+</script>
+
+<h2 id="title"></h2>
+<h3 id="warning"></h3>
+<div class="instructions">
+  <h3 id="whatIs"></h3>
+  <p id="description"></p>
+  <p id="description2"></p>
+  <h3 id="howTo"></h3>
+  <ol id="stepsList"></ol>
+  <p id="note"></p>
+</div>
+
   <input type="file" id="audioFile" accept="audio/*">
   <p>波形の棒の個数を入れてください(1~60)</p>
   <input type="number" id="barCount" min="1" max="60" value="19" title="生成するデータ数 (1-60)">
