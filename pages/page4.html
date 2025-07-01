@@ -20,6 +20,8 @@
       margin-top: 20px;
     }
     canvas {
+      width: 100%;
+      height: 400px;
       background: #1a1a1a;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
@@ -72,7 +74,6 @@
     <p>⑤ ダウンロードされた .sprite3 ファイルをScratchで開くと、リスト[1]〜[N]に波形データが格納されています。</p>
     <p>曲の長さが1m30s超えるようであれば本数をあげすぎるとサイトがとても重くなるので25以下がおすすめです。</p>
   </div>
-  <div id="userIcon"></div>
   <input type="file" id="audioFile" accept="audio/*">
   <p>波形の棒の個数を入れてください(1~60)</p>
   <input type="number" id="barCount" min="1" max="60" value="19" title="生成するデータ数 (1-60)">
@@ -84,8 +85,6 @@
   <script>
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = 400;
 
     let audioContext, analyser, dataArray, collectedData = [];
     let intervalId, animationId;
@@ -100,36 +99,34 @@
       "5": "qZKwKaO2Feywh43^p}Ls", "6": "1Cz-*ryy;gF^5]ZAanfS",
       "7": "?LQ0TxT|[cBZsm).|7qR", "8": "+_.2N~a]F;E@D3Ri)*Hs",
       "9": "zu!d#cLmu:p)rtvifjBA", "10": "ct*M#U-GfnqrR6i-mA]D",
-      "11": "/rJ=R,!v!=GoUmHkS^l", "12": "N-n]=sxgVM:M;zuCe:5b",
-      "13": "Cq(Soa:;83N+F~ZCZ.d", "14": "(1A6Qj7bJFq!tuAQ3Jqv",
+      "11": "/rJ=`R,!v!=GoUmHkS^l", "12": "N-n]=sxgVM:M;zuCe:5b",
+      "13": "Cq(Soa:;8`3N+F~ZCZ.d", "14": "(1A6Qj7bJFq!tuAQ3Jqv",
       "15": "Cb.YPA0Y/?q:@|W}^WT!", "16": "]eRbhH$O@:G8-DAhSx%X",
       "17": "IygaQ}!z3FI_NN%Xs,RX", "18": ".MR#i{o(C8cW61jupx2,",
       "19": "DaQ(?yN~oH}].{;f(KTw", "20": "BDK5}}1/p8;p=CfCuxqW",
       "21": "@xkkuY|kF3tiAcp3~l+{", "22": "Nxx!(D*;S#fLRJLT1(z2",
       "23": "R4)@1IPuMG|ec}VcUEW_", "24": "m,U|-m34^W)~f@X(]p-5",
-      "25": "_{Dh*~[i!cNc=Gf{~Fc]", "26": "e{_,bqT:=!fLeL?,av|",
+      "25": "_{Dh*~[i!cNc=Gf{~Fc]", "26": "e{_,bqT:=!fLeL?,`av|",
       "27": "o@h)=_B%z4[tLO)gh6$-", "28": "65iaJCB}qSl_rvO~~Z%A",
       "29": "cA|HR{dz1S3GJ2Immoo$", "30": "L-QKKH7s[*tLzO4)ORrE",
       "31": "3T8M1TsN7fswqO?!xEHC", "32": "Q3Bd|gpZ8K7N0zb;;Wro",
-      "33": "I9Mg2y]2iX.i=eoM[$4j", "34": "16k`0^_:_40?o?{WofT",
+      "33": "I9Mg2y]2iX.i=eoM[$4j", "34": "16k``0^_:_40?o?{WofT",
       "35": "pgG%rc#J56VuUr4WX/Up", "36": "jd%}.wnR[UFv7GZz:/2R",
-      "37": "J+B@R+sZ(v{Vat9y,d#", "38": "ZqmSFUO^+KCpl|UPAn=Z",
+      "37": "J+`B@R+sZ(v{Vat9y,d#", "38": "ZqmSFUO^+KCpl|UPAn=Z",
       "39": "C]4{pn8}!j5gYzvK,%0x", "40": "|0{YaD7CgOCG{{=q)7#O",
-      "41": "ApI~l8.0;1J=m$3AGO;", "42": "|@~7^o2bIKZC~Td=(iE",
-      "43": ",sYUE[|9O)a*QV)X84=", "44": "xr4L)buV~0#RY,@[u)5K",
+      "41": "ApI~l8.`0;1J=m$3AGO;", "42": "`|@~7^o2bIKZC~Td=(iE",
+      "43": ",sYU`E[|9O)a*QV)X84=", "44": "xr4L)buV~0#RY,@[u)5K",
       "45": "vJE/X8B[aVDp#1tTm+ey", "46": "d*|al1VBM:5z8pWxjn0;",
-      "47": "ZPFnV}}$0pxLD;Yu8e9Q", "48": "C_0~E7La+2vU{iRQgo!",
+      "47": "ZPFnV}}$0pxLD;Yu8e9Q", "48": "C_0~E`7La+2vU{iRQgo!",
       "49": "a6;v{g;}r~!zl.@J3UXl", "50": "|z*F~osCRxzcWBh[ikxW",
       "51": "|G-|3Dp=|k6:9N8g)kC/", "52": "MP}56lpY[!eT.J{=-{W^",
       "53": "]yv1d_o.TYOzW]w.Sm0@", "54": "l*p!P$eFTD*2+3AE0=9?",
       "55": "_!-?f+C/~?V=Tu--FW@h", "56": ".=Rf,aZ?M.Mvz:d@[gQZ",
       "57": "~6wD17QhpoZO-iuLOIU=", "58": "FXO5ameEw-2}Pf5MPOD~",
-      "59": "ad8gH5(qQS0:KbsDm~W", "60": "Zc]DarN[{w?Lz4Hg]/RL"
+      "59": "ad8gH5(q`QS0:KbsDm~W", "60": "Zc]DarN[{w?Lz4Hg]/RL"
     };
 
-    };
-
-    document.getElementById("audioFile").addEventListener("change", async function () {
+    document.getElementById("audioFile").addEventListener("change", async function() {
       const file = this.files[0];
       if (!file) return;
       const arrayBuffer = await file.arrayBuffer();
@@ -138,7 +135,7 @@
       document.getElementById("exportSpriteBtn").disabled = true;
     });
 
-    document.getElementById("playBtn").addEventListener("click", async function () {
+    document.getElementById("playBtn").addEventListener("click", async function() {
       if (!audioBuffer || !audioContext) {
         alert("音声ファイルを選択してください。再度お試しください。");
         return;
@@ -157,9 +154,7 @@
       indices = Array.from({ length: numBars }, (_, i) =>
         Math.floor((i / numBars) * analyser.frequencyBinCount)
       );
-
       source.start();
-
       source.onended = () => {
         clearInterval(intervalId);
         cancelAnimationFrame(animationId);
@@ -175,7 +170,6 @@
         const frame = indices.map(i => String(dataArray[i]).padStart(3, "0"));
         collectedData.push(frame);
       }, 50);
-
       drawBars();
     });
 
@@ -228,8 +222,6 @@
       a.download = "output_with_sdf.sprite3";
       a.click();
     });
-
   </script>
-  <script src="https://kikukick.github.io/kikukick_program_page/pages/my_account/account.js"></script>
 </body>
 </html>
