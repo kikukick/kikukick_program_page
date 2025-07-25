@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
   if (userIcon) {
     userIcon.addEventListener("click", function () {
       if (confirm("移動しますか？")) {
-        window.location.href = "https://scratch.mit.edu/users/kikukick/";
+        window.location.href = "https://github.com/kikukick";
         
       }
     });
